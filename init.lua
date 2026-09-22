@@ -1,14 +1,13 @@
 --[[
 
 =====================================================================
-==================== READ THIS BEFORE CONTINUING ====================
 =====================================================================
 ========                                    .-----.          ========
 ========         .----------------------.   | === |          ========
 ========         |.-""""""""""""""""""-.|   |-----|          ========
 ========         ||                    ||   | === |          ========
-========         ||   KICKSTART.NVIM   ||   |-----|          ========
-========         ||                    ||   | === |          ========
+========         ||    HANYUE.NVIM     ||   |-----|          ========
+========         ||  (KICKSTART.NVIM)  ||   | === |          ========
 ========         ||                    ||   |-----|          ========
 ========         ||:Tutor              ||   |:::::|          ========
 ========         |'-..................-'|   |____o|          ========
@@ -20,68 +19,6 @@
 =====================================================================
 =====================================================================
 
-What is Kickstart?
-
-  Kickstart.nvim is *not* a distribution.
-
-  Kickstart.nvim is a starting point for your own configuration.
-    The goal is that you can read every line of code, top-to-bottom, understand
-    what your configuration is doing, and modify it to suit your needs.
-
-    Once you've done that, you can start exploring, configuring and tinkering to
-    make Neovim your own! That might mean leaving Kickstart just the way it is for a while
-    or immediately breaking it into modular pieces. It's up to you!
-
-    If you don't know anything about Lua, I recommend taking some time to read through
-    a guide. One possible example which will only take 10-15 minutes:
-      - https://learnxinyminutes.com/docs/lua/
-
-    After understanding a bit more about Lua, you can use `:help lua-guide` as a
-    reference for how Neovim integrates Lua.
-    - :help lua-guide
-    - (or HTML version): https://neovim.io/doc/user/lua-guide.html
-
-Kickstart Guide:
-
-  TODO: The very first thing you should do is to run the command `:Tutor` in Neovim.
-
-    If you don't know what this means, type the following:
-      - <escape key>
-      - :
-      - Tutor
-      - <enter key>
-
-    (If you already know the Neovim basics, you can skip this step.)
-
-  Once you've completed that, you can continue working through **AND READING** the rest
-  of the kickstart init.lua.
-
-  Next, run AND READ `:help`.
-    This will open up a help window with some basic information
-    about reading, navigating and searching the builtin help documentation.
-
-    This should be the first place you go to look when you're stuck or confused
-    with something. It's one of my favorite Neovim features.
-
-    MOST IMPORTANTLY, we provide a keymap "<space>sh" to [s]earch the [h]elp documentation,
-    which is very useful when you're not exactly sure of what you're looking for.
-
-  I have left several `:help X` comments throughout the init.lua
-    These are hints about where to find more information about the relevant settings,
-    plugins or Neovim features used in Kickstart.
-
-   NOTE: Look for lines like this
-
-    Throughout the file. These are for you, the reader, to help you understand what is happening.
-    Feel free to delete them once you know what you're doing, but they should serve as a guide
-    for when you are first encountering a few different constructs in your Neovim config.
-
-If you experience any errors while trying to install kickstart, run `:checkhealth` for more info.
-
-I hope you enjoy your Neovim journey,
-- TJ
-
-P.S. You can delete this when you're done too. It's your config now! :)
 --]]
 
 -- ============================================================
@@ -108,15 +45,33 @@ do
 
   -- Make line numbers default
   vim.o.number = true
-  -- You can also add relative line numbers, to help with jumping.
-  --  Experiment for yourself to see if you like it!
-  -- vim.o.relativenumber = true
+  vim.o.relativenumber = true
 
   -- Enable mouse mode, can be useful for resizing splits for example!
   vim.o.mouse = 'a'
 
   -- Don't show the mode, since it's already in the status line
-  vim.o.showmode = false
+  -- I think the some theme disables this
+  -- TODO revisit
+  -- vim.o.showmode = false
+
+  -- Sets keyboard provider to OSC52 (special control sequence to copy to host's clipboard)
+  -- Only some terminal emulator supports it though
+  -- Only a remote terminal session needs OSC 52. Local desktop (xclip/wl-copy),
+  -- native Windows, and WSL (win32yank/clip.exe) are all auto-detected.
+  if vim.env.SSH_TTY then
+    local osc52 = require 'vim.ui.clipboard.osc52'
+    vim.g.clipboard = {
+      name = 'osc52',
+      copy = { ['+'] = osc52.copy '+', ['*'] = osc52.copy '*' },
+      -- Copy-only: most terminals refuse to let a program *read* the clipboard,
+      -- so reading would hang or silently fail. Paste from the unnamed register.
+      paste = {
+        ['+'] = function() return vim.split(vim.fn.getreg '', '\n') end,
+        ['*'] = function() return vim.split(vim.fn.getreg '', '\n') end,
+      },
+    }
+  end
 
   -- Sync clipboard between OS and Neovim.
   --  Schedule the setting after `UiEnter` because it can increase startup-time.
@@ -167,10 +122,53 @@ do
   -- Minimal number of screen lines to keep above and below the cursor.
   vim.o.scrolloff = 10
 
-  -- if performing an operation that would fail due to unsaved changes in the buffer (like `:q`),
-  -- instead raise a dialog asking if you wish to save the current file(s)
-  -- See `:help 'confirm'`
-  vim.o.confirm = true
+  -- language based custom tab widths, compliments guess-indent in case of an empty new file ig
+  -- Global default: 4 spaces
+  vim.o.expandtab = true
+  vim.o.tabstop = 4
+  vim.o.softtabstop = 4
+  vim.o.shiftwidth = 4
+
+  local two_space = {
+    'lua', 'yaml', 'json', 'jsonc', 'toml', 'html', 'css', 'scss',
+    'javascript', 'typescript', 'markdown', 'sh', 'bash', 'zsh', 'xml',
+  }
+
+  local four_space = {
+    'python', 'c', 'cpp', 'rust', 'java', 'bitbake', 'cmake', 'meson',
+  }
+
+  local hard_tab = {
+    make = 8,      -- required by make, not a style choice
+    go = 4,        -- gofmt mandates tabs
+    dts = 8,       -- devicetree, kernel style
+    kconfig = 8,
+    gitconfig = 4,
+  }
+
+  local function set_indent(width, expand)
+    vim.bo.expandtab = expand
+    vim.bo.tabstop = width
+    vim.bo.softtabstop = expand and width or 0
+    vim.bo.shiftwidth = width
+  end
+
+  vim.api.nvim_create_autocmd('FileType', {
+    pattern = two_space,
+    callback = function() set_indent(2, true) end,
+  })
+
+  vim.api.nvim_create_autocmd('FileType', {
+    pattern = four_space,
+    callback = function() set_indent(4, true) end,
+  })
+
+  for ft, width in pairs(hard_tab) do
+    vim.api.nvim_create_autocmd('FileType', {
+      pattern = ft,
+      callback = function() set_indent(width, false) end,
+    })
+  end
 end
 
 -- ============================================================
@@ -180,6 +178,29 @@ end
 do
   -- [[ Basic Keymaps ]]
   --  See `:help vim.keymap.set()`
+
+  -- MUST: kj to escape
+  vim.keymap.set('i', 'kj', '<Esc>', { desc = 'Exit insert mode' })
+
+  -- MUST: change/delete/paste without yanking
+  -- delete without yanking
+  vim.keymap.set({ 'n', 'v' }, '<leader>d', '"_d', { desc = 'Delete without yanking' })
+  vim.keymap.set({ 'n', 'v' }, '<leader>D', '"_D', { desc = 'Delete to EOL without yanking' })
+
+  -- change without yanking
+  vim.keymap.set({ 'n', 'v' }, '<leader>c', '"_c', { desc = 'Change without yanking' })
+  vim.keymap.set({ 'n', 'v' }, '<leader>C', '"_C', { desc = 'Change to EOL without yanking' })
+
+  -- paste over selection without clobbering the register
+  vim.keymap.set('v', '<leader>p', '"_dP', { desc = 'Paste without yanking replaced text' })
+
+  -- visual: move the selection (thank you theprimeagen)
+  vim.keymap.set('v', 'J', ":m '>+1<cr>gv=gv", { desc = 'Move selection down' })
+  vim.keymap.set('v', 'K', ":m '<-2<cr>gv=gv", { desc = 'Move selection up' })
+
+  -- normal: move the current line
+  vim.keymap.set('n', '<A-j>', '<cmd>m .+1<cr>==', { desc = 'Move line down' })
+  vim.keymap.set('n', '<A-k>', '<cmd>m .-2<cr>==', { desc = 'Move line up' })
 
   -- Clear highlights on search when pressing <Esc> in normal mode
   --  See `:help hlsearch`
@@ -226,15 +247,35 @@ do
   -- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
   -- Keybinds to make split navigation easier.
-  --  Use CTRL+<hjkl> to switch between windows
+  --  Use SPACE+w+<hjkl> to switch between windows
   --
   --  See `:help wincmd` for a list of all window commands
-  vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-  vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
-  vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
-  vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+  vim.keymap.set('n', '<leader>wh', '<C-w><C-h>', { desc = 'Move focus left' })
+  vim.keymap.set('n', '<leader>wj', '<C-w><C-j>', { desc = 'Move focus down' })
+  vim.keymap.set('n', '<leader>wk', '<C-w><C-k>', { desc = 'Move focus up' })
+  vim.keymap.set('n', '<leader>wl', '<C-w><C-l>', { desc = 'Move focus right' })
+
+  -- window creation and deletion
+  vim.keymap.set('n', '<leader>wv', '<C-w>v', { desc = 'Split vertical' })
+  vim.keymap.set('n', '<leader>ws', '<C-w>s', { desc = 'Split horizontal' })
+  vim.keymap.set('n', '<leader>wq', '<C-w>q', { desc = 'Close window' })
+
+  -- leader key window resizes (have to repeat the whole sequence everytime)
+  vim.keymap.set('n', '<leader>wH', '<cmd>vertical resize -4<cr>', { desc = 'Narrower Window' })
+  vim.keymap.set('n', '<leader>wL', '<cmd>vertical resize +4<cr>', { desc = 'Wider Window' })
+  vim.keymap.set('n', '<leader>wJ', '<cmd>resize -4<cr>', { desc = 'Shorter Window' })
+  vim.keymap.set('n', '<leader>wK', '<cmd>resize +4<cr>', { desc = 'Taller Window' })
+  vim.keymap.set('n', '<leader>w=', '<C-w>=', { desc = 'Equalize Window' })
+  vim.keymap.set('n', '<leader>wm', '<C-w>_<C-w>|', { desc = 'Maximize Window' })
+
+  -- repeatable resizes
+  vim.keymap.set('n', '<C-Up>', '<cmd>resize +2<cr>', { desc = 'Window Height +' })
+  vim.keymap.set('n', '<C-Down>', '<cmd>resize -2<cr>', { desc = 'Window Height -' })
+  vim.keymap.set('n', '<C-Left>', '<cmd>vertical resize -2<cr>', { desc = 'Window Width -' })
+  vim.keymap.set('n', '<C-Right>', '<cmd>vertical resize +2<cr>', { desc = 'Window Width +' })
 
   -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
+  -- I don't move windows
   -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
   -- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
   -- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
@@ -413,6 +454,7 @@ do
       { '<leader>s', group = '[S]earch', mode = { 'n', 'v' } },
       { '<leader>t', group = '[T]oggle' },
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
+      { '<leader>w', group = '[W]indow Actions'}
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
     },
   }
@@ -948,7 +990,7 @@ do
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+  local parsers = { 'bash', 'c', 'cpp', 'odin', 'zig', 'java', 'python', 'make', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
   require('nvim-treesitter').install(parsers)
 
   ---@param buf integer
