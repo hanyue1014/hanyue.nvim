@@ -35,9 +35,16 @@ External Requirements:
 - [ripgrep](https://github.com/BurntSushi/ripgrep#installation),
   [fd-find](https://github.com/sharkdp/fd#installation)
 - [tree-sitter CLI](https://github.com/tree-sitter/tree-sitter/blob/master/crates/cli/README.md#installation)
+  - if it isn't on `PATH`, mason installs it into `stdpath('data')` instead,
+    so this one still works on machines without sudo
 - Clipboard tool (xclip/xsel/win32yank or other depending on the platform)
-- A [Nerd Font](https://www.nerdfonts.com/): optional, provides various icons
-  - if you have it set `vim.g.have_nerd_font` in `init.lua` to true
+- A [Nerd Font](https://www.nerdfonts.com/): **required**, provides various icons
+  - I use [FiraCode Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip).
+    Install it, then select it as the font in your terminal, otherwise icons
+    render as tofu boxes
+  - Windows: `choco install firacodenf`
+  - `vim.g.have_nerd_font` is already `true` in `lua/config/options.lua`. Set it
+    back to `false` if you're on a machine where you can't install the font
 - Emoji fonts (Ubuntu only, and only if you want emoji!) `sudo apt install fonts-noto-color-emoji`
 - Language Setup:
   - If you want to write Typescript, you need `npm`

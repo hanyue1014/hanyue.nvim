@@ -16,7 +16,10 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+-- I use FiraCode Nerd Font, see the README. Turning this on switches
+-- which-key, mini.statusline, mini.icons and neo-tree over to real glyphs
+-- instead of their plain text fallbacks.
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 --  See `:help vim.o`
