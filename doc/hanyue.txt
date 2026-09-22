@@ -508,6 +508,15 @@ WHICH-KEY
 `delay = 0`, so the popup is immediate rather than after a pause. Pressing
 <Space> and waiting is the intended way to explore.
 
+MOUSE
+`mouse` is empty, where kickstart ships `'a'`. Mouse mode interferes with
+the terminal's own mouse handling, so click-dragging to select and copy
+stops behaving the way it does in every other terminal program.
+
+The tradeoff is losing drag to resize splits, which is what the
+`<leader>w` resizes and the repeatable `<C-Up>` family exist for. See
+|hanyue-keys-window|.
+
 OTHER SMALL THINGS
 mini.statusline's location section is overridden to `%2l:%-2v`.
 todo-comments runs with `signs = false`.

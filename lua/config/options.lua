@@ -30,8 +30,11 @@ vim.g.have_nerd_font = true
 vim.o.number = true
 vim.o.relativenumber = true
 
--- Enable mouse mode, can be useful for resizing splits for example!
-vim.o.mouse = 'a'
+-- Mouse mode off. Kickstart ships this as 'a', but it interferes with the
+-- terminal's own mouse behaviour, so selecting and copying stops working
+-- the way it does in every other terminal program.
+-- The ascii art up top did say no mouse required.
+vim.o.mouse = ''
 
 -- Don't show the mode, since it's already in the status line
 -- I think the some theme disables this
