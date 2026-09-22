@@ -219,20 +219,26 @@ choco install -y neovim git ripgrep wget fd unzip gzip mingw make tree-sitter
 > ```
 >
 > The tree-sitter CLI is found and running fine here. The problem is that it
-> reaches for `cl.exe`, the MSVC compiler, while the choco line above installs
-> `mingw` (gcc). Those never meet, so every parser fails to compile and
+> compiles parsers through Rust's `cc` crate, and the Windows build of the CLI
+> targets MSVC, so it shells out to `cl.exe`. The choco line above installs
+> `mingw` (gcc) and no MSVC, so those two never meet. Every parser fails and
 > highlighting silently falls back to vim's old regex syntax.
 >
 > Confirm with `:checkhealth nvim-treesitter`. If the CLI shows as found but
 > parsers are still missing, this is why.
 >
-> Untested fixes, in rough order of how likely they are to just work:
-> - Use the [Microsoft C++ Build Tools](#Windows-Installation) recipe above
->   instead, which gives you a real `cl.exe`
-> - Point the compiler at gcc with a `CC` environment variable. Note the
->   tree-sitter CLI emits MSVC style flags, so gcc may reject them anyway
+> **This config already handles it.** `lua/custom/plugins/treesitter.lua` sets
+> `CC=gcc` when it detects Windows, no `cl.exe`, and a working `gcc`. The `cc`
+> crate honours `CC` and switches to GNU style flags when the compiler isn't
+> named like `cl.exe`, so mingw is enough on its own and you do **not** need
+> MSVC. Verified: the same parser fails bare and builds with `CC=gcc` set.
 >
-> Neither has been verified on this setup yet.
+> It deliberately does nothing if you already have `cl.exe`, or if you've set
+> `CC` yourself, so a real MSVC setup is left alone.
+>
+> If parsers still fail after this, check that `gcc` is actually on `PATH` in a
+> **fresh** shell (`gcc --version`). Chocolatey adds it at install time, but an
+> already-open terminal or editor keeps the old `PATH` until it's restarted.
 </details>
 <details><summary>WSL (Windows Subsystem for Linux)</summary>
 

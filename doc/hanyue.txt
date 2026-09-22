@@ -414,7 +414,25 @@ installed by hand through `:Mason` are not switched on behind your back.
 TREESITTER
 Pinned to the `main` branch. Parsers are built with the tree-sitter CLI,
 which is an external requirement listed in README.md, not something
-Neovim provides.
+Neovim provides. Built parsers land in `stdpath('data')/site/parser`, not
+inside the plugin folder, which is worth knowing when checking whether a
+build actually produced anything.
+
+A C compiler is needed too, and on Windows that part bites. The CLI
+compiles through Rust's `cc` crate, and the Windows build of the CLI
+targets MSVC, so it shells out to `cl.exe`. The README's choco line
+installs mingw (gcc) and no MSVC, so every parser fails with "program not
+found" and highlighting quietly falls back to regex syntax.
+
+`treesitter.lua` sets `CC=gcc` when it sees Windows, no `cl.exe`, and a
+working `gcc`, because `cc` honours CC and switches to GNU style flags
+when the compiler isn't named like cl.exe. mingw alone is then enough and
+MSVC is not needed. The guard does nothing when `cl.exe` exists or when CC
+is already set by hand, so a real MSVC setup is untouched.
+
+If parsers still fail, check `gcc --version` in a *fresh* shell. Chocolatey
+adds it to PATH at install time, but an editor or terminal that was
+already open keeps the stale PATH until restarted.
 
 `lsp.lua` adds `tree-sitter-cli` to the mason install list only when
 `tree-sitter` is not already on PATH. mason installs under

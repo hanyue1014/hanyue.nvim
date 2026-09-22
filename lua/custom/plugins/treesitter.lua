@@ -22,6 +22,28 @@ vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } 
 -- when it isn't already on PATH.
 local parsers = { 'bash', 'c', 'cpp', 'odin', 'zig', 'java', 'python', 'make', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
 
+-- [[ Making the parser build find a compiler on Windows ]]
+--
+-- The tree-sitter CLI compiles parsers through Rust's `cc` crate, and the
+-- Windows build of the CLI targets MSVC, so it shells out to `cl.exe`. The
+-- README's choco line installs mingw (gcc) and no MSVC at all, so every
+-- parser dies with:
+--
+--   Failed to execute the C compiler with the following command:
+--   "cl.exe" "-nologo" "-MD" ...
+--   Error: program not found
+--
+-- `cc` honours the CC environment variable, and it picks GNU style flags
+-- whenever the compiler isn't named like cl.exe, so pointing CC at gcc is
+-- all it takes. Verified: same parser fails bare, builds fine with CC=gcc.
+--
+-- Guarded three ways so this only fires where it's actually the fix. It
+-- leaves alone any machine with real MSVC build tools, anything that isn't
+-- Windows, and any CC I've deliberately set myself.
+if vim.fn.has 'win32' == 1 and (vim.env.CC or '') == '' and vim.fn.executable 'cl' == 0 and vim.fn.executable 'gcc' == 1 then
+  vim.env.CC = 'gcc'
+end
+
 local function install_parsers() require('nvim-treesitter').install(parsers) end
 
 -- On a brand new machine mason is still downloading the tree-sitter CLI in
