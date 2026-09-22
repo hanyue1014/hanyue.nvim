@@ -54,6 +54,10 @@ require 'config.pack'
 require 'config.keymaps'
 require 'config.autocmds'
 
+-- GUI only. Returns immediately when nvim is running in a terminal,
+-- so it costs nothing there.
+require 'config.neovide'
+
 -- [[ Plugins ]]
 -- Loads every file in `lua/custom/plugins/`.
 require 'custom'

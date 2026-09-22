@@ -205,6 +205,34 @@ open a new one so that choco path is set, and run in cmd as **admin**:
 ```
 choco install -y neovim git ripgrep wget fd unzip gzip mingw make tree-sitter
 ```
+
+> [!WARNING]
+> Doing the above is **not** always enough for treesitter parsers on Windows.
+> Even with `mingw` installed, parser builds can still fail like this:
+>
+> ```
+> [nvim-treesitter/install/c] error: Error during "tree-sitter build": Failed to compile parser
+> Caused by:
+>     Failed to execute the C compiler with the following command:
+>     "cl.exe" "-nologo" "-MD" "-O2" ... 
+>     Error: program not found
+> ```
+>
+> The tree-sitter CLI is found and running fine here. The problem is that it
+> reaches for `cl.exe`, the MSVC compiler, while the choco line above installs
+> `mingw` (gcc). Those never meet, so every parser fails to compile and
+> highlighting silently falls back to vim's old regex syntax.
+>
+> Confirm with `:checkhealth nvim-treesitter`. If the CLI shows as found but
+> parsers are still missing, this is why.
+>
+> Untested fixes, in rough order of how likely they are to just work:
+> - Use the [Microsoft C++ Build Tools](#Windows-Installation) recipe above
+>   instead, which gives you a real `cl.exe`
+> - Point the compiler at gcc with a `CC` environment variable. Note the
+>   tree-sitter CLI emits MSVC style flags, so gcc may reject them anyway
+>
+> Neither has been verified on this setup yet.
 </details>
 <details><summary>WSL (Windows Subsystem for Linux)</summary>
 
