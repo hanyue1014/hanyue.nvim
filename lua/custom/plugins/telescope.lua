@@ -44,12 +44,31 @@ vim.pack.add(telescope_plugins)
 require('telescope').setup {
   -- You can put your default mappings / updates / etc. in here
   --  All the info you're looking for is in `:help telescope.setup()`
-  --
-  -- defaults = {
-  --   mappings = {
-  --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-  --   },
-  -- },
+  defaults = {
+    -- These merge into telescope's defaults key by key, so anything not
+    -- named here keeps its stock value. Notably preview_cutoff stays 120,
+    -- so a narrow window still drops the preview rather than forcing it.
+    layout_config = {
+      -- A bit wider than the 0.8 default, so there's more to split up.
+      width = 0.9,
+      height = 0.9,
+      -- Unset, telescope picks about 0.4 and the preview feels cramped.
+      horizontal = { preview_width = 0.5 },
+    },
+
+    -- atfwd.c app\bui\msm\tar\eag\atf
+    -- Filename in full and up front, folders shortened and dimmed behind
+    -- it. Matching still uses the full real path, only the display changes.
+    path_display = { shorten = 5, 'filename_first' },
+
+    -- Puts the selected entry's real unshortened path in the preview
+    -- window's title, so there's always somewhere to read it in full.
+    dynamic_preview_title = true,
+
+    -- mappings = {
+    --   i = { ['<c-enter>'] = 'to_fuzzy_refine' },
+    -- },
+  },
   pickers = {
     buffers = {
       -- Close buffers from inside the picker. The list refreshes and the
