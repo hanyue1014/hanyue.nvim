@@ -98,22 +98,44 @@ repeat on their own:
 --------------------------------------------------------------------------------
 SEARCH                                                    *hanyue-keys-search*
 
-Telescope, `lua/custom/plugins/telescope.lua`. which-key group "[S]earch".
+Everything that finds something lives under `<leader>f`, read as [F]ind or
+[F]ile. which-key group "[F]ind / [F]ile".
 
-    <leader><leader>  existing buffers
-    <leader>sf        find files
-    <leader>sg        live grep
-    <leader>sw        current word (normal and visual)
-    <leader>sd        diagnostics
-    <leader>sh        help tags
-    <leader>sk        keymaps
-    <leader>sc        commands
-    <leader>sr        resume last picker
-    <leader>ss        list Telescope builtins
-    <leader>s.        recent files
-    <leader>sn        find files in the Neovim config directory
-    <leader>s/        live grep, open files only
+Telescope, `lua/custom/plugins/telescope.lua`:
+
+    <leader>ff        find files
+    <leader>fb        find buffer
+    <leader>fg        live grep
+    <leader>fw        current word (normal and visual)
+    <leader>fd        diagnostics
+    <leader>fh        help tags
+    <leader>fk        keymaps
+    <leader>fc        commands
+    <leader>fr        resume last picker
+    <leader>fs        list Telescope builtins
+    <leader>fo        live grep, open files only
+    <leader>f.        recent files
+    <leader>fn        find files in the Neovim config directory
+
+neo-tree, `lua/custom/plugins/neo-tree.lua`:
+
+    <leader>fe        file explorer, toggles
+
+Deliberately not under the prefix:
+
     <leader>/         fuzzy find in current buffer, dropdown, no preview
+
+Inside the buffers picker (`<leader>fb`) only, close a buffer without
+leaving the picker:
+
+    <C-b>       insert mode
+    dd          normal mode
+
+Both keys were picked because they are free in Telescope's defaults. `<C-d>`
+is preview scroll and `<C-x>` is open-in-split, so neither is safe to reuse.
+
+Inside the picker generally, <C-/> in insert mode or `?` in normal mode
+lists that picker's own keymaps.
 
 Inside a picker, <C-/> in insert mode or `?` in normal mode lists that
 picker's own keymaps.
@@ -124,12 +146,20 @@ LSP                                                          *hanyue-keys-lsp*
 Buffer local, only present once a server attaches. which-key group
 "LSP Actions" on `gr`.
 
-`lua/custom/plugins/lsp.lua`:
+Two ways in on purpose. `gr*` is the fast one and sits where Neovim's own
+LSP defaults already live. `<leader>l*` is the discoverable one, the
+"[L]anguage" which-key group, for when the letter has been forgotten.
 
-    grn         rename
-    gra         code action (normal and visual)
+`lua/custom/plugins/lsp.lua`, buffer local:
+
+    grn         rename                 also <leader>lr
+    gra         code action            also <leader>la   (normal and visual)
     grD         goto declaration, not definition
     <leader>th  toggle inlay hints, only if the server supports them
+
+`lua/custom/plugins/conform.lua`, global, works with no server attached:
+
+    grf         format buffer          also <leader>lf   (normal and visual)
 
 `lua/custom/plugins/telescope.lua`, a separate LspAttach, these open a
 picker rather than the built in handler:
@@ -183,9 +213,8 @@ These were moved off mini's defaults so they stop clashing with Neovim's
 treesitter incremental selection on `an` and `in`. See
 |treesitter-incremental-selection|.
 
-Formatting, `lua/custom/plugins/conform.lua`:
-
-    <leader>f   format buffer, normal and visual, async
+Formatting lives with the LSP actions now, see |hanyue-keys-lsp|.
+`<leader>f` is the [F]ind prefix.
 
 blink.cmp runs the `default` preset, so the menu keys are the built in
 completion ones. See |ins-completion| and `:help blink-cmp-config-keymap`.
@@ -312,9 +341,17 @@ terminals refuse to let a program read the clipboard and the read would
 hang or silently fail.
 
 NERD FONT
-`vim.g.have_nerd_font` is `false`. which-key icons, mini.statusline icons
-and the whole mini.icons module are gated on it, so mini.icons is
-currently not active at all. Flipping it to `true` turns on all three.
+`vim.g.have_nerd_font` is `true`, and the font is FiraCode Nerd Font. See
+README.md for installing it.
+
+Four things are gated on that flag: which-key icons, mini.statusline
+icons, the mini.icons module, and neo-tree's icon set. mini.icons also
+calls `mock_nvim_web_devicons()`, which is how plugins that ask for
+`nvim-web-devicons` by name, telescope and neo-tree among them, end up
+with icons without that plugin being installed.
+
+Set it back to `false` on a machine where the font can't be installed.
+Everything gated on it falls back to plain text rather than breaking.
 
 COLORSCHEME
 catppuccin mocha with `transparent_background = true`. Transparency also
@@ -333,7 +370,7 @@ lua_ls formatting is turned off in two separate places, the
 in settings. The intent is for stylua to do it instead.
 
 But conform's `formatters_by_ft` is still empty, and `lsp_format` is set
-to `'fallback'`. So on a lua file `<leader>f` falls back to the language
+to `'fallback'`. So on a lua file `grf` falls back to the language
 server, whose formatting was just disabled, and nothing happens. Adding
 `lua = { 'stylua' }` to `formatters_by_ft` completes the intent.
 
@@ -399,6 +436,34 @@ puts its bin folder on PATH, and this folder is loaded by globbing, so
 
 Treesitter folds are present but commented out in `treesitter.lua`.
 
+NEO-TREE
+Ported from `lua/kickstart/plugins/neo-tree.lua`, which was already written
+for vim.pack, into `lua/custom/plugins/neo-tree.lua` so it joins the normal
+plugin folder.
+
+Opens on the right, so toggling it does not shove the code sideways.
+
+`filtered_items` shows everything, dotfiles and gitignored included,
+because this is a config repo and plenty of what matters is hidden by one
+rule or the other. `H` inside the tree is neo-tree's own `toggle_hidden`
+and hides them again.
+
+`follow_current_file` is enabled. It only finds and focuses the current
+file inside the tree, it does not re-root or narrow anything, the full
+tree stays. Root is controlled separately by `bind_to_cwd` and the `.`
+key. Its companion `leave_dirs_open` is left at neo-tree's default
+`false`, so directories auto expanded to reveal a file collapse again
+afterwards.
+
+Icons follow `vim.g.have_nerd_font`, which is currently `true`. In that
+case neo-tree's own defaults are left untouched: folder glyphs come from
+neo-tree, and per filetype file icons come from mini.icons, because
+neo-tree's icon provider asks for `nvim-web-devicons` at render time and
+mini.icons mocks that name.
+
+If the flag is `false` a plain ASCII table replaces all of it, otherwise
+those glyphs would render as tofu boxes.
+
 CONDITIONAL PLUGIN
 `telescope-fzf-native.nvim` is only added to the plugin list when `make`
 is executable, since it has to be compiled. Both Telescope extensions are
@@ -445,7 +510,7 @@ See pending updates without fetching: >
     :checkhealth nvim-treesitter  parser and CLI status
     :Tutor                        the built in Vim tutor
 
-`<leader>sk` searches every keymap currently defined, which is the
+`<leader>fk` searches every keymap currently defined, which is the
 authoritative answer when this document and the config disagree.
 
 To add a plugin, drop a new file in `lua/custom/plugins/`. It is picked up
