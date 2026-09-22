@@ -50,7 +50,20 @@ require('telescope').setup {
   --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
   --   },
   -- },
-  -- pickers = {}
+  pickers = {
+    buffers = {
+      -- Close buffers from inside the picker. The list refreshes and the
+      -- prompt stays open, so I can wipe out several in one go.
+      --
+      -- NOTE: both keys are free in telescope's defaults, checked against
+      -- `mappings.default_mappings`. Don't reach for <C-d> or <C-x> here,
+      -- those are already preview scroll and open-in-split.
+      mappings = {
+        i = { ['<C-b>'] = require('telescope.actions').delete_buffer },
+        n = { ['dd'] = require('telescope.actions').delete_buffer },
+      },
+    },
+  },
   extensions = {
     ['ui-select'] = { require('telescope.themes').get_dropdown() },
   },
@@ -61,18 +74,22 @@ pcall(require('telescope').load_extension, 'fzf')
 pcall(require('telescope').load_extension, 'ui-select')
 
 -- See `:help telescope.builtin`
+--
+-- Everything Telescope lives under <leader>f, which I read as [F]ind or
+-- [F]ile depending on the day. The file explorer is <leader>fe and sits in
+-- neo-tree.lua, so the whole prefix is one mental group.
 local builtin = require 'telescope.builtin'
-vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
-vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
-vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
-vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
-vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
-vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
-vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
-vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = '[F]ind [F]iles' })
+vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = '[F]ind [B]uffer' })
+vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = '[F]ind by [G]rep' })
+vim.keymap.set({ 'n', 'v' }, '<leader>fw', builtin.grep_string, { desc = '[F]ind current [W]ord' })
+vim.keymap.set('n', '<leader>fd', builtin.diagnostics, { desc = '[F]ind [D]iagnostics' })
+vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = '[F]ind [H]elp' })
+vim.keymap.set('n', '<leader>fk', builtin.keymaps, { desc = '[F]ind [K]eymaps' })
+vim.keymap.set('n', '<leader>fc', builtin.commands, { desc = '[F]ind [C]ommands' })
+vim.keymap.set('n', '<leader>fr', builtin.resume, { desc = '[F]ind [R]esume last picker' })
+vim.keymap.set('n', '<leader>fs', builtin.builtin, { desc = '[F]ind [S]elect Telescope' })
+vim.keymap.set('n', '<leader>f.', builtin.oldfiles, { desc = '[F]ind Recent Files ("." for repeat)' })
 
 -- Add Telescope-based LSP pickers when an LSP attaches to a buffer.
 -- If you later switch picker plugins, this is where to update these mappings.
@@ -109,6 +126,10 @@ vim.api.nvim_create_autocmd('LspAttach', {
 })
 
 -- Override default behavior and theme when searching
+--
+-- This one deliberately stays off the <leader>f prefix. <leader>/ already
+-- reads as "search, but here", and it's used often enough to earn a spot of
+-- its own.
 vim.keymap.set('n', '<leader>/', function()
   -- You can pass additional configuration to Telescope to change the theme, layout, etc.
   builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
@@ -121,15 +142,15 @@ end, { desc = '[/] Fuzzily search in current buffer' })
 --  See `:help telescope.builtin.live_grep()` for information about particular keys
 vim.keymap.set(
   'n',
-  '<leader>s/',
+  '<leader>fo',
   function()
     builtin.live_grep {
       grep_open_files = true,
       prompt_title = 'Live Grep in Open Files',
     }
   end,
-  { desc = '[S]earch [/] in Open Files' }
+  { desc = '[F]ind in [O]pen Files' }
 )
 
 -- Shortcut for searching your Neovim configuration files
-vim.keymap.set('n', '<leader>sn', function() builtin.find_files { cwd = vim.fn.stdpath 'config', follow = true } end, { desc = '[S]earch [N]eovim files' })
+vim.keymap.set('n', '<leader>fn', function() builtin.find_files { cwd = vim.fn.stdpath 'config', follow = true } end, { desc = '[F]ind [N]eovim config files' })

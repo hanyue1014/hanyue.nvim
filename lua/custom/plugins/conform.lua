@@ -35,4 +35,16 @@ require('conform').setup {
   },
 }
 
-vim.keymap.set({ 'n', 'v' }, '<leader>f', function() require('conform').format { async = true } end, { desc = '[F]ormat buffer' })
+-- Two ways into the same action on purpose.
+--
+-- `grf` sits with the rest of the LSP actions, next to Neovim's own `grn`,
+-- `gra` and friends, which is where my hand already is after a code action.
+-- `<leader>lf` is the discoverable one, it shows up when I hit <leader> and
+-- wait for which-key.
+--
+-- NOTE: `<leader>f` used to be this. It is the [F]ind prefix now, and
+-- formatting moved here so the two don't fight.
+local function format() require('conform').format { async = true } end
+
+vim.keymap.set({ 'n', 'v' }, 'grf', format, { desc = 'LSP: Format buffer' })
+vim.keymap.set({ 'n', 'v' }, '<leader>lf', format, { desc = '[L]anguage: [F]ormat buffer' })

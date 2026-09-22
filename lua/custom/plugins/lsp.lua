@@ -60,6 +60,12 @@ vim.api.nvim_create_autocmd('LspAttach', {
     -- or a suggestion from your LSP for this to activate.
     map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
 
+    -- Same two actions again under <leader>l, the same way `grf` and
+    -- `<leader>lf` both format. `gr*` is the fast one, `<leader>l*` is the
+    -- one which-key shows me when I've forgotten the letter.
+    map('<leader>lr', vim.lsp.buf.rename, '[L]anguage: [R]ename')
+    map('<leader>la', vim.lsp.buf.code_action, '[L]anguage: Code [A]ction', { 'n', 'x' })
+
     -- WARN: This is not Goto Definition, this is Goto Declaration.
     --  For example, in C this would take you to the header.
     map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
