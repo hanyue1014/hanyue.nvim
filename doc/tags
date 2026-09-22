@@ -1,3 +1,16 @@
+hanyue	hanyue.txt	/*hanyue*
+hanyue-builtins	hanyue.txt	/*hanyue-builtins*
+hanyue-keys	hanyue.txt	/*hanyue-keys*
+hanyue-keys-cmp	hanyue.txt	/*hanyue-keys-cmp*
+hanyue-keys-core	hanyue.txt	/*hanyue-keys-core*
+hanyue-keys-git	hanyue.txt	/*hanyue-keys-git*
+hanyue-keys-lsp	hanyue.txt	/*hanyue-keys-lsp*
+hanyue-keys-search	hanyue.txt	/*hanyue-keys-search*
+hanyue-keys-window	hanyue.txt	/*hanyue-keys-window*
+hanyue-layout	hanyue.txt	/*hanyue-layout*
+hanyue-maintenance	hanyue.txt	/*hanyue-maintenance*
+hanyue-special	hanyue.txt	/*hanyue-special*
+hanyue.txt	hanyue.txt	/*hanyue.txt*
 kickstart-is	kickstart.txt	/*kickstart-is*
 kickstart-is-not	kickstart.txt	/*kickstart-is-not*
 kickstart.nvim	kickstart.txt	/*kickstart.nvim*

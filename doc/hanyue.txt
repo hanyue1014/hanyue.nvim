@@ -1,0 +1,445 @@
+*hanyue.txt*                          How to use this Neovim configuration
+
+================================================================================
+CONTENTS                                                              *hanyue*
+
+  1. Layout ......................................... |hanyue-layout|
+  2. Keymaps set by this config ..................... |hanyue-keys|
+       core ........................................ |hanyue-keys-core|
+       windows ..................................... |hanyue-keys-window|
+       search ...................................... |hanyue-keys-search|
+       LSP ......................................... |hanyue-keys-lsp|
+       git ......................................... |hanyue-keys-git|
+       completion .................................. |hanyue-keys-cmp|
+  3. Built in keys worth knowing .................... |hanyue-builtins|
+  4. Special configuration .......................... |hanyue-special|
+  5. Maintenance .................................... |hanyue-maintenance|
+
+The leader key is <Space>. The local leader key is also <Space>.
+
+Based on kickstart.nvim. Uses `vim.pack`, the plugin manager built into
+Neovim. See |vim.pack|.
+
+================================================================================
+1. LAYOUT                                                      *hanyue-layout*
+
+>
+    init.lua                     load order only, no settings
+    lua/config/options.lua       leader key and vim.o settings
+    lua/config/indent.lua        tab widths, global and per filetype
+    lua/config/keymaps.lua       keymaps that need no plugin
+    lua/config/autocmds.lua      autocommands that need no plugin
+    lua/config/pack.lua          vim.pack build hooks, gh() url helper
+    lua/custom/init.lua          loader for the folder below
+    lua/custom/plugins/*.lua     one file per plugin
+<
+Each plugin file is self contained. It calls `vim.pack.add` for what it
+needs, then that plugin's `setup()`. Deleting the file removes the plugin.
+
+================================================================================
+2. KEYMAPS SET BY THIS CONFIG                                    *hanyue-keys*
+
+Everything below is an explicit `vim.keymap.set` in this config, or an
+explicit mapping passed to a plugin's `setup()`. Plugin defaults that were
+left alone are not listed here.
+
+--------------------------------------------------------------------------------
+CORE                                                        *hanyue-keys-core*
+
+`lua/config/keymaps.lua`
+
+    kj          insert      exit insert mode
+    <Esc>       normal      clear search highlight (nohlsearch)
+    <Esc><Esc>  terminal    exit terminal mode
+
+Black hole register, so the yank register survives. Normal and visual:
+
+    <leader>d   delete without yanking
+    <leader>D   delete to end of line without yanking
+    <leader>c   change without yanking
+    <leader>C   change to end of line without yanking
+    <leader>p   visual only, paste over selection without yanking it
+
+Moving lines:
+
+    J           visual      move selection down
+    K           visual      move selection up
+    <A-j>       normal      move current line down
+    <A-k>       normal      move current line up
+
+<A-j> and <A-k> are shown as <M-j> and <M-k> by `:map`. Same thing.
+
+Diagnostics:
+
+    <leader>q   diagnostic loclist (vim.diagnostic.setloclist)
+
+--------------------------------------------------------------------------------
+WINDOWS                                                   *hanyue-keys-window*
+
+`lua/config/keymaps.lua`. which-key group "[W]indow Actions".
+
+    <leader>wh <leader>wj <leader>wk <leader>wl   move focus
+    <leader>wv  split vertical
+    <leader>ws  split horizontal
+    <leader>wq  close window
+    <leader>wH  narrower, vertical resize -4
+    <leader>wL  wider, vertical resize +4
+    <leader>wJ  shorter, resize -4
+    <leader>wK  taller, resize +4
+    <leader>w=  equalize
+    <leader>wm  maximize
+
+The leader resizes need the whole sequence retyped each time. These
+repeat on their own:
+
+    <C-Up> <C-Down>       height +2 / -2
+    <C-Left> <C-Right>    width -2 / +2
+
+--------------------------------------------------------------------------------
+SEARCH                                                    *hanyue-keys-search*
+
+Telescope, `lua/custom/plugins/telescope.lua`. which-key group "[S]earch".
+
+    <leader><leader>  existing buffers
+    <leader>sf        find files
+    <leader>sg        live grep
+    <leader>sw        current word (normal and visual)
+    <leader>sd        diagnostics
+    <leader>sh        help tags
+    <leader>sk        keymaps
+    <leader>sc        commands
+    <leader>sr        resume last picker
+    <leader>ss        list Telescope builtins
+    <leader>s.        recent files
+    <leader>sn        find files in the Neovim config directory
+    <leader>s/        live grep, open files only
+    <leader>/         fuzzy find in current buffer, dropdown, no preview
+
+Inside a picker, <C-/> in insert mode or `?` in normal mode lists that
+picker's own keymaps.
+
+--------------------------------------------------------------------------------
+LSP                                                          *hanyue-keys-lsp*
+
+Buffer local, only present once a server attaches. which-key group
+"LSP Actions" on `gr`.
+
+`lua/custom/plugins/lsp.lua`:
+
+    grn         rename
+    gra         code action (normal and visual)
+    grD         goto declaration, not definition
+    <leader>th  toggle inlay hints, only if the server supports them
+
+`lua/custom/plugins/telescope.lua`, a separate LspAttach, these open a
+picker rather than the built in handler:
+
+    grd         goto definition
+    grr         references
+    gri         implementation
+    grt         type definition
+    gO          document symbols
+    gW          workspace symbols
+
+Neovim already maps `grn` `gra` `grr` `gri` `grt` `gO` globally to the
+plain `vim.lsp.buf` functions. The buffer local versions above win while a
+server is attached.
+
+--------------------------------------------------------------------------------
+GIT                                                          *hanyue-keys-git*
+
+gitsigns, buffer local. which-key group "Git [H]unk" on `<leader>h`.
+
+    ]c          next hunk (falls back to diff mode ]c inside a diff)
+    [c          previous hunk
+    <leader>hs  stage hunk (normal and visual)
+    <leader>hr  reset hunk (normal and visual)
+    <leader>hS  stage buffer
+    <leader>hR  reset buffer
+    <leader>hp  preview hunk
+    <leader>hi  preview hunk inline
+    <leader>hb  blame line, full
+    <leader>hd  diff against index
+    <leader>hD  diff against last commit
+    <leader>hq  hunk quickfix list, this file
+    <leader>hQ  hunk quickfix list, whole repo
+    ih          text object, inside hunk (operator and visual)
+
+Toggles, which-key group "[T]oggle" on `<leader>t`:
+
+    <leader>tb  git blame on current line
+    <leader>tw  git word diff
+    <leader>th  LSP inlay hints (from lsp.lua, see above)
+
+--------------------------------------------------------------------------------
+TEXT OBJECTS AND COMPLETION                                  *hanyue-keys-cmp*
+
+mini.ai, the only mappings explicitly overridden in `setup()`:
+
+    aa          around next textobject
+    ii          inside next textobject
+
+These were moved off mini's defaults so they stop clashing with Neovim's
+treesitter incremental selection on `an` and `in`. See
+|treesitter-incremental-selection|.
+
+Formatting, `lua/custom/plugins/conform.lua`:
+
+    <leader>f   format buffer, normal and visual, async
+
+blink.cmp runs the `default` preset, so the menu keys are the built in
+completion ones. See |ins-completion| and `:help blink-cmp-config-keymap`.
+Worth remembering: <C-y> accepts, <C-space> opens the menu or the docs,
+<C-e> hides, <C-k> toggles signature help.
+
+================================================================================
+3. BUILT IN KEYS WORTH KNOWING                               *hanyue-builtins*
+
+None of these come from this config. They are Vim or Neovim defaults that
+rarely show up in tutorials, listed here so they are not forgotten.
+
+Neovim 0.11 and 0.12 defaults:
+
+    gc  gcc     toggle comment, operator and line
+    ]d  [d      next / previous diagnostic
+    ]D  [D      last / first diagnostic in buffer
+    ]q  [q      next / previous quickfix entry
+    ]b  [b      next / previous buffer
+    ]a  [a      next / previous argument list file
+    ]<Space>    add an empty line below the cursor
+    [<Space>    add an empty line above the cursor
+    gx          open the file path or URL under the cursor
+    <C-W>d      show diagnostics under the cursor in a float
+    grx         run the code lens under the cursor
+    <C-S>       signature help, insert and visual mode
+    an  in      treesitter, select parent / child node
+    ]n  [n      treesitter, next / previous node
+    ]N  [N      treesitter, next / previous sibling node
+
+Jumping and returning:
+
+    <C-o>       jump back in the jumplist            |CTRL-O|
+    <C-i>       jump forward in the jumplist         |CTRL-I|
+    <C-t>       pop the tag stack, returns from a goto definition |CTRL-T|
+    <C-6>       switch to the alternate file         |CTRL-6|
+    ''          back to the line you jumped from     |''|
+    `.          to the position of the last edit     |`.|
+    g;  g,      backward / forward through the changelist  |g;| |g,|
+    gv          reselect the last visual selection   |gv|
+    gi          insert where you last left insert mode |gi|
+
+Screen position:
+
+    zz  zt  zb  cursor line to middle / top / bottom  |zz| |zt| |zb|
+
+Editing that people forget exists:
+
+    <C-a>  <C-x>    increment / decrement the number under the cursor
+    gJ              join lines without inserting a space     |gJ|
+    gu  gU          lowercase / uppercase operator           |gu| |gU|
+    gq              format lines to textwidth                |gq|
+    ga              show the character code under the cursor |ga|
+    g&              repeat the last :s across the whole file |g&|
+    g?              rot13 operator, mostly a curiosity       |g?|
+    g<C-g>          word, line and byte count of the buffer  |g_CTRL-G|
+    <C-v>           visual block mode                        |CTRL-V|
+    o               in visual mode, jump to the other end    |v_o|
+
+Command line and insert mode:
+
+    q:              open the command line window, editable history  |q:|
+    <C-r><C-w>      in the command line, insert the word under the
+                    cursor                          |c_CTRL-R_CTRL-W|
+    <C-r>           in insert mode, paste a register          |i_CTRL-R|
+    <C-o>           in insert mode, run one normal command    |i_CTRL-O|
+
+Files and windows:
+
+    gf              open the file under the cursor            |gf|
+    gd              goto local declaration, works with no LSP |gd|
+    K               keyword lookup, the LSP hover when attached  |K|
+    <C-w>o          close every window except this one     |CTRL-W_o|
+    <C-w>T          move this window into a new tab         |CTRL-W_T|
+
+Undo across time, not steps:
+
+    :earlier 10m    the buffer as it was ten minutes ago     |:earlier|
+    :later 10m      forward again
+
+================================================================================
+4. SPECIAL CONFIGURATION                                      *hanyue-special*
+
+The non obvious decisions in this config, and why they are there.
+
+LOAD ORDER
+`init.lua` requires `config.options`, `config.indent`, `config.pack`,
+`config.keymaps`, `config.autocmds`, then `custom`. The first three are
+order dependent. `config.options` sets the leader key, which must happen
+before any plugin loads or the plugin captures the wrong leader.
+`config.pack` registers the `PackChanged` build hooks, which must happen
+before anything calls `vim.pack.add`.
+
+`lua/custom/init.lua` requires `custom.plugins.colorscheme` by name first,
+then globs the rest of the folder with `vim.fs.dir()`. The colorscheme is
+named explicitly so there is no flash of the default theme on startup.
+`require` caches, so it does not load twice. The order of everything else
+is unspecified, so co dependent plugins belong in one file.
+
+INDENTATION
+Global default is 4 spaces with `expandtab`. Per filetype overrides are
+`FileType` autocommands writing buffer local options (`vim.bo`), not
+global ones, so a lua split and a python split keep their own widths.
+
+    2 spaces    lua yaml json jsonc toml html css scss javascript
+                typescript markdown sh bash zsh xml
+    4 spaces    python c cpp rust java bitbake cmake meson
+    hard tabs   make 8, go 4, dts 8, kconfig 8, gitconfig 4
+
+The hard tab ones are requirements, not taste. make needs real tabs, gofmt
+mandates them, dts and kconfig follow kernel style.
+
+This complements guess-indent.nvim, which handles existing files. These
+rules cover the case guess-indent cannot, a new empty file.
+
+CLIPBOARD
+`clipboard` is set inside `vim.schedule()` because setting it during
+startup is slow.
+
+OSC 52 is configured only when `vim.env.SSH_TTY` is set, because only a
+remote session needs it. Local desktop, native Windows and WSL are all
+auto detected by Neovim. It is deliberately copy only, since most
+terminals refuse to let a program read the clipboard and the read would
+hang or silently fail.
+
+NERD FONT
+`vim.g.have_nerd_font` is `false`. which-key icons, mini.statusline icons
+and the whole mini.icons module are gated on it, so mini.icons is
+currently not active at all. Flipping it to `true` turns on all three.
+
+COLORSCHEME
+catppuccin mocha with `transparent_background = true`. Transparency also
+needs the terminal itself to be transparent. Neovim cannot do it alone.
+
+catppuccin is added with an explicit `name` because its repository is
+called `catppuccin/nvim`, which would otherwise install into a folder
+named `nvim`.
+
+tokyonight is still installed but not loaded. `:colorscheme
+tokyonight-night` switches to it, also `-storm` `-moon` `-day`.
+
+FORMATTING, AND A GOTCHA
+lua_ls formatting is turned off in two separate places, the
+`documentFormattingProvider` capability in `on_init` and `format.enable`
+in settings. The intent is for stylua to do it instead.
+
+But conform's `formatters_by_ft` is still empty, and `lsp_format` is set
+to `'fallback'`. So on a lua file `<leader>f` falls back to the language
+server, whose formatting was just disabled, and nothing happens. Adding
+`lua = { 'stylua' }` to `formatters_by_ft` completes the intent.
+
+`format_on_save` is wired up but its `enabled_filetypes` table is empty,
+so nothing formats on save right now. Add filetypes there to turn it on.
+
+LANGUAGE SERVERS
+Every key of the `servers` table gets installed by mason and enabled by
+`vim.lsp.enable`. Two groups.
+
+Always registered, mason downloads these as prebuilt binaries and they
+need nothing else present:
+
+    clangd (c, cpp), ols (odin), rust_analyzer, zls (zig), lua_ls, stylua
+
+Registered only when a tool is on PATH, because mason has to build these
+or fetch them from a language package registry, and a missing toolchain
+means the install fails and retries on every startup:
+
+    gopls    needs `go`
+    pyright  needs `npm`
+    ruff     needs `pip`
+    jdtls    needs `java`
+
+`pip` is checked rather than `python` because Windows ships a stub
+`python.exe` that only opens the Microsoft Store, and it would pass an
+executable check.
+
+This gating exists so the same config works on machines with different
+things installed. Install a toolchain, restart, the server appears.
+
+`stylua` sits in the `servers` table even though it is a formatter, not a
+server. That is inherited from kickstart. It is how stylua gets into
+`ensure_installed`, which is built from `vim.tbl_keys(servers)`. It has no
+`cmd` and no `filetypes`, so `vim.lsp.enable` on it never attaches to
+anything and it is harmless.
+
+`mason-lspconfig` runs with `automatic_enable = false`, so servers
+installed by hand through `:Mason` are not switched on behind your back.
+
+TREESITTER
+Pinned to the `main` branch. Parsers are built with the tree-sitter CLI,
+which is an external requirement listed in README.md, not something
+Neovim provides.
+
+`lsp.lua` adds `tree-sitter-cli` to the mason install list only when
+`tree-sitter` is not already on PATH. mason installs under
+`stdpath('data')`, so this needs no administrator rights and covers
+machines without sudo. On a machine where the README's install line was
+already run, the check skips it and there is no second copy.
+
+On a fresh machine mason fetches it in the background, so parsers only
+start building on the second launch.
+
+Treesitter folds are present but commented out in `treesitter.lua`.
+
+CONDITIONAL PLUGIN
+`telescope-fzf-native.nvim` is only added to the plugin list when `make`
+is executable, since it has to be compiled. Both Telescope extensions are
+loaded with `pcall`, so a missing one is not an error.
+
+BUILD HOOKS
+`config/pack.lua` registers a `PackChanged` autocommand that runs `make`
+for telescope-fzf-native, `make install_jsregexp` for LuaSnip on non
+Windows systems, and `TSUpdate` for nvim-treesitter. Failures are reported
+through `vim.notify`.
+
+VERSION PINS
+LuaSnip is pinned to the `2.*` range and blink.cmp to `1.*`, using
+`vim.version.range()`. blink.cmp's fuzzy matcher is set to the Lua
+implementation rather than the Rust one, so nothing needs downloading.
+
+DIAGNOSTICS
+Virtual text on, virtual lines off, no updates while in insert mode,
+severity sorted, rounded float border, underline only for WARN and above.
+Jumping with `[d` or `]d` opens the float automatically, which is the
+`jump.on_jump` handler.
+
+WHICH-KEY
+`delay = 0`, so the popup is immediate rather than after a pause. Pressing
+<Space> and waiting is the intended way to explore.
+
+OTHER SMALL THINGS
+mini.statusline's location section is overridden to `%2l:%-2v`.
+todo-comments runs with `signs = false`.
+`vim.loader.enable()` is the first line executed, for the module cache.
+`vim.o.showmode` is commented out in `options.lua` with a TODO.
+
+================================================================================
+5. MAINTENANCE                                            *hanyue-maintenance*
+
+Update plugins: >
+    :lua vim.pack.update()
+<
+See pending updates without fetching: >
+    :lua vim.pack.update(nil, { offline = true })
+<
+    :Mason                        server and tool status, g? for help
+    :checkhealth                  everything
+    :checkhealth nvim-treesitter  parser and CLI status
+    :Tutor                        the built in Vim tutor
+
+`<leader>sk` searches every keymap currently defined, which is the
+authoritative answer when this document and the config disagree.
+
+To add a plugin, drop a new file in `lua/custom/plugins/`. It is picked up
+automatically.
+
+ vim:tw=78:ts=8:ft=help:norl:
