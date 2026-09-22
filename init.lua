@@ -53,6 +53,7 @@ require 'config.pack'
 -- they can sit anywhere after the leader key is set.
 require 'config.keymaps'
 require 'config.autocmds'
+require 'config.commands'
 
 -- GUI only. Returns immediately when nvim is running in a terminal,
 -- so it costs nothing there.
