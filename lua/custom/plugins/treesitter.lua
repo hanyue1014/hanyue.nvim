@@ -21,7 +21,35 @@ vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } 
 -- `:checkhealth nvim-treesitter` first. lsp.lua has mason install the CLI
 -- when it isn't already on PATH.
 local parsers = { 'bash', 'c', 'cpp', 'odin', 'zig', 'java', 'python', 'make', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
-require('nvim-treesitter').install(parsers)
+
+local function install_parsers() require('nvim-treesitter').install(parsers) end
+
+-- On a brand new machine mason is still downloading the tree-sitter CLI in
+-- the background while this file runs, so calling install() straight away
+-- throws a red ENOENT about 'tree-sitter'. It sorts itself out on the next
+-- launch, but it's an alarming first impression for no reason, so wait until
+-- the CLI actually exists.
+--
+-- The check runs on VimEnter rather than right here, because mason is what
+-- puts its own bin folder on PATH, and the load order of this folder is
+-- unspecified, so lsp.lua may not have run yet at this point.
+vim.api.nvim_create_autocmd('VimEnter', {
+  once = true,
+  callback = function()
+    if vim.fn.executable 'tree-sitter' == 1 then
+      install_parsers()
+      return
+    end
+
+    -- mason-tool-installer fires this once its whole queue is done, which is
+    -- the point where tree-sitter-cli is really on disk.
+    vim.api.nvim_create_autocmd('User', {
+      pattern = 'MasonToolsUpdateCompleted',
+      once = true,
+      callback = function() vim.schedule(install_parsers) end,
+    })
+  end,
+})
 
 ---@param buf integer
 ---@param language string

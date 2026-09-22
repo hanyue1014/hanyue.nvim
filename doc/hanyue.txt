@@ -385,8 +385,17 @@ Neovim provides.
 machines without sudo. On a machine where the README's install line was
 already run, the check skips it and there is no second copy.
 
-On a fresh machine mason fetches it in the background, so parsers only
-start building on the second launch.
+On a fresh machine mason fetches it in the background, so the CLI does
+not exist yet at the moment `treesitter.lua` runs. Rather than calling
+`install()` and getting a red ENOENT, the parser install waits: on
+VimEnter it builds straight away if `tree-sitter` is on PATH, otherwise
+it listens for `MasonToolsUpdateCompleted`, which mason-tool-installer
+fires once its queue is done. So parsers still build on the first
+launch, just a little later in it.
+
+The check sits on VimEnter and not at file scope because mason is what
+puts its bin folder on PATH, and this folder is loaded by globbing, so
+`lsp.lua` is not guaranteed to have run yet.
 
 Treesitter folds are present but commented out in `treesitter.lua`.
 
