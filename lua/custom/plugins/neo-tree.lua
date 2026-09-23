@@ -99,4 +99,22 @@ require('neo-tree').setup {
       hide_gitignored = false,
     },
   },
+  -- Close the tree the moment a file is opened from it, which is what makes
+  -- the window picker question go away: <CR> opens the file, the tree gets out
+  -- of the way, and the cursor is already where I want it. No target window to
+  -- pick, no <leader>wl afterwards. <leader>fe brings the tree back.
+  --
+  -- There's no boolean for this. `close_if_last_window` is a different thing
+  -- (it stops the tree being left alone in a tab). The event handler is how
+  -- neo-tree itself documents it, commented out in its own defaults.lua under
+  -- the label "auto close".
+  --
+  -- `file_opened` is fired by neo-tree's open commands rather than a key, so
+  -- this covers <CR>, o, S, s and t alike.
+  event_handlers = {
+    {
+      event = 'file_opened',
+      handler = function() require('neo-tree.command').execute { action = 'close' } end,
+    },
+  },
 }
