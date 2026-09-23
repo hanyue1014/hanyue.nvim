@@ -239,6 +239,34 @@ choco install -y neovim git ripgrep wget fd unzip gzip mingw make tree-sitter
 > If parsers still fail after this, check that `gcc` is actually on `PATH` in a
 > **fresh** shell (`gcc --version`). Chocolatey adds it at install time, but an
 > already-open terminal or editor keeps the old `PATH` until it's restarted.
+
+> [!WARNING]
+> `mingw` is also **not** enough for clangd. In a C or C++ file you get:
+>
+> ```
+> 'stdio.h' file not found
+> ```
+>
+> clangd on Windows assumes the MSVC toolchain and looks for the MSVC and
+> Windows SDK headers. It does not look next to `gcc`, so with only mingw
+> installed it finds no system headers at all.
+>
+> Fix it by installing the MSVC build tools. clangd finds them on its own, and
+> you don't need a Developer Command Prompt. Run in cmd as **admin**:
+>
+> ```
+> winget install Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+> ```
+>
+> `--includeRecommended` pulls in the Windows SDK, and that is where
+> `stdio.h` actually lives. Restart nvim afterwards.
+> 
+> We still recommend install MSVC via the graphical installer though
+>
+> If you can't install MSVC, you can use mingw's headers for a single project.
+> Put a `compile_flags.txt` containing `--target=x86_64-w64-mingw32` in the
+> project root. Verified: that makes clangd find the mingw headers with
+> 0 errors.
 </details>
 <details><summary>WSL (Windows Subsystem for Linux)</summary>
 
