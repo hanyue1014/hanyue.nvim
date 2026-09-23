@@ -51,10 +51,15 @@ if vim.env.SSH_TTY then
     name = 'osc52',
     copy = { ['+'] = osc52.copy '+', ['*'] = osc52.copy '*' },
     -- Copy-only: most terminals refuse to let a program *read* the clipboard,
-    -- so reading would hang or silently fail. Paste from the unnamed register.
+    -- so reading would hang or silently fail. Paste from the unnamed register (").
     paste = {
-      ['+'] = function() return vim.split(vim.fn.getreg '', '\n') end,
-      ['*'] = function() return vim.split(vim.fn.getreg '', '\n') end,
+      -- roughly { <lines in register>, <register type: v|V|^V> }
+      ['+'] = function() 
+        return { vim.split(vim.fn.getreg '"', '\n'), vim.fn.getregtype '"' } 
+      end,
+      ['*'] = function() 
+        return { vim.split(vim.fn.getreg '"', '\n'), vim.fn.getregtype '"' } 
+      end,
     },
   }
 end
@@ -65,8 +70,17 @@ end
 --  See `:help 'clipboard'`
 vim.schedule(function() vim.o.clipboard = 'unnamedplus' end)
 
--- Enable break indent
+-- wrap options
+vim.o.wrap = true
+
+-- wrap at words, not chars
+vim.o.linebreak = true
+
+-- Enable break indent, keep indentation for wrapped lines
 vim.o.breakindent = true
+
+-- show the ↪ character followed by a space for wrapped lines
+vim.o.showbreak = "↪ "
 
 -- Enable undo/redo changes even after closing and reopening a file
 vim.o.undofile = true
