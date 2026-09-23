@@ -216,10 +216,19 @@ treesitter incremental selection on `an` and `in`. See
 Formatting lives with the LSP actions now, see |hanyue-keys-lsp|.
 `<leader>f` is the [F]ind prefix.
 
-blink.cmp runs the `default` preset, so the menu keys are the built in
-completion ones. See |ins-completion| and `:help blink-cmp-config-keymap`.
-Worth remembering: <C-y> accepts, <C-space> opens the menu or the docs,
-<C-e> hides, <C-k> toggles signature help.
+blink.cmp runs the `default` preset with a few overrides. Nothing is
+preselected when the menu opens, so <Tab> only accepts once you have picked
+an item. Otherwise it indents or aligns as normal.
+
+    <C-j> <C-k>     select next / previous (also <C-n> <C-p>, arrows)
+    <Tab>           accept the selected item, else snippet jump, else tab
+    <S-Tab>         snippet jump back
+    <C-y>           accept the top item without selecting it first
+    <C-space>       open the menu, or the docs if already open
+    <C-e>           hide the menu
+    <C-s>           signature help (built in; <C-k> now selects)
+
+See `:help blink-cmp-config-keymap`.
 
 ================================================================================
 3. BUILT IN KEYS WORTH KNOWING                               *hanyue-builtins*

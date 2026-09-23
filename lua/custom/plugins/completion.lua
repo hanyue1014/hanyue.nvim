@@ -46,6 +46,26 @@ require('blink.cmp').setup {
     -- See `:help blink-cmp-config-keymap` for defining your own keymap
     preset = 'default',
 
+    -- <Tab> only accepts an item you explicitly selected. With preselect off
+    -- (see `completion.list.selection`), an open menu with nothing selected
+    -- lets <Tab> through, so indenting and aligning struct fields still work.
+    ['<Tab>'] = {
+      function(cmp)
+        if cmp.is_menu_visible() and cmp.get_selected_item() then return cmp.accept() end
+      end,
+      'snippet_forward',
+      'fallback',
+    },
+    ['<S-Tab>'] = { 'snippet_backward', 'fallback' },
+
+    -- <C-y> accepts the top item straight away, no need to select it first
+    ['<C-y>'] = { 'select_and_accept', 'fallback' },
+
+    -- Cycle with <C-j>/<C-k> in addition to <C-n>/<C-p> and the arrows.
+    -- This takes <C-k> from signature help; the built in <C-s> still shows it.
+    ['<C-j>'] = { 'select_next', 'fallback' },
+    ['<C-k>'] = { 'select_prev', 'fallback' },
+
     -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
     --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
   },
@@ -60,6 +80,10 @@ require('blink.cmp').setup {
     -- By default, you may press `<c-space>` to show the documentation.
     -- Optionally, set `auto_show = true` to show the documentation after a delay.
     documentation = { auto_show = false, auto_show_delay_ms = 500 },
+
+    -- Nothing is selected when the menu opens, and cycling does not write
+    -- into the buffer until you accept. This is what keeps <Tab> safe.
+    list = { selection = { preselect = false, auto_insert = false } },
   },
 
   sources = {
