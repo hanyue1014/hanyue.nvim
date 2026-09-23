@@ -79,8 +79,14 @@ vim.o.linebreak = true
 -- Enable break indent, keep indentation for wrapped lines
 vim.o.breakindent = true
 
--- show the ↪ character followed by a space for wrapped lines
-vim.o.showbreak = "↪ "
+-- show a ↪ followed by a space at the start of each wrapped line. U+21AA,
+-- written as an escape so the character can't get mangled in transit, with an
+-- ASCII fallback for a terminal that would only draw a box for it.
+if vim.g.have_nerd_font then
+  vim.o.showbreak = '\u{21aa} '
+else
+  vim.o.showbreak = '> '
+end
 
 -- Enable undo/redo changes even after closing and reopening a file
 vim.o.undofile = true

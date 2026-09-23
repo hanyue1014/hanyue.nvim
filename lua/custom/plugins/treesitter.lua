@@ -85,10 +85,12 @@ local function treesitter_try_attach(buf, language)
   -- Enable syntax highlighting and other treesitter features
   vim.treesitter.start(buf, language)
 
-  -- Enable treesitter based folds
-  -- For more info on folds see `:help folds`
-  -- vim.wo.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
-  -- vim.wo.foldmethod = 'expr'
+  -- NOTE: treesitter folds are not set up here. Kickstart sets `vim.wo` in
+  -- this callback, but fold options are window local and this runs on
+  -- FileType, where the current window isn't reliably the one showing `buf`.
+  -- They're set globally in `lua/config/options.lua` instead, which every
+  -- window then inherits. `vim.treesitter.foldexpr()` handles the no parser
+  -- case on its own, so nothing needs to happen per buffer.
 
   -- Check if treesitter indentation is available for this language, and if so enable it
   -- in case there is no indent query, the indentexpr will fallback to the vim's built in one
