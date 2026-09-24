@@ -25,6 +25,22 @@ vim.keymap.set({ 'n', 'v' }, '<leader>C', '"_C', { desc = 'Change to EOL without
 -- paste over selection without clobbering the register
 vim.keymap.set('v', '<leader>p', '"_dP', { desc = 'Paste without yanking replaced text' })
 
+-- insert: ctrl+backspace / ctrl+delete delete a word, like other editors
+-- <C-w> is the built in "delete word before cursor", and it already joins
+-- with the previous line at the start of a line (see `:help 'backspace'`)
+vim.keymap.set('i', '<C-BS>', '<C-w>', { desc = 'Delete previous word' })
+-- terminals send ctrl+backspace as <C-h> (Neovide sends a real <C-BS>)
+vim.keymap.set('i', '<C-h>', '<C-w>', { desc = 'Delete previous word (terminal)' })
+
+-- `dw` can't join lines, so at the end of a line fall back to <Del>
+vim.keymap.set('i', '<C-Del>', function()
+  -- in insert mode the cursor can sit after the last character, so a column
+  -- past the line's length means we're at the end: <Del> joins the next line
+  -- up. Otherwise `"_dw` deletes the next word without touching the register.
+  if vim.fn.col '.' > #vim.fn.getline '.' then return '<Del>' end
+  return '<C-o>"_dw'
+end, { expr = true, desc = 'Delete next word' })
+
 -- visual: move the selection (thank you theprimeagen)
 vim.keymap.set('v', 'J', ":m '>+1<cr>gv=gv", { desc = 'Move selection down' })
 vim.keymap.set('v', 'K', ":m '<-2<cr>gv=gv", { desc = 'Move selection up' })
