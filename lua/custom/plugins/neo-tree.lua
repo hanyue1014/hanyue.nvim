@@ -98,6 +98,20 @@ require('neo-tree').setup {
     },
   },
   filesystem = {
+    -- Keep the tree's root and vim's working directory independent. The
+    -- tree never changes where vim thinks it is.
+    --
+    -- Neo-tree's default (true) ties the two together both ways:
+    --   - changing the tree's root (`.` on a folder, <bs> to go up, or
+    --     answering yes to "File not in cwd. Change cwd?") also runs `:tcd`,
+    --     so telescope, grep, `:e` and the start screen's recent files all
+    --     start working from the new folder
+    --   - `:cd somewhere` makes the tree jump there
+    --
+    -- With false, those keys only change what the tree shows, and vim stays
+    -- in the folder nvim was started in. The price is the second point: after
+    -- a `:cd` the tree doesn't follow, navigate it there or reopen it.
+    bind_to_cwd = false,
     -- Finds and focuses the current file in the tree whenever I switch
     -- buffers. It only moves the cursor, the rest of the tree stays exactly
     -- as it was, and the root is untouched (that's `bind_to_cwd` and the
