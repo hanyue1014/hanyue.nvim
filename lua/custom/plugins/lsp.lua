@@ -238,3 +238,11 @@ for name, server in pairs(servers) do
   vim.lsp.config(name, server)
   vim.lsp.enable(name)
 end
+
+-- Anything a server needs beyond its config table (commands, autocmds,
+-- helpers) lives in `lua/custom/lspconfig/<server>.lua`, so this file stays
+-- about wiring. Same glob as `lua/custom/init.lua`.
+local lspconfig_dir = vim.fs.joinpath(vim.fn.stdpath 'config', 'lua', 'custom', 'lspconfig')
+for file_name, type in vim.fs.dir(lspconfig_dir, { follow = true }) do
+  if (type == 'file' or type == 'link') and file_name:match '%.lua$' then require('custom.lspconfig.' .. file_name:gsub('%.lua$', '')) end
+end
