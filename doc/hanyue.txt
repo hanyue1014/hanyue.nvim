@@ -533,13 +533,18 @@ WHICH-KEY
 <Space> and waiting is the intended way to explore.
 
 MOUSE
-`mouse` is empty, where kickstart ships `'a'`. Mouse mode interferes with
-the terminal's own mouse handling, so click-dragging to select and copy
-stops behaving the way it does in every other terminal program.
+`mouse` is `'a'`, mainly so the scroll wheel works. With it on, the
+terminal hands every click to Neovim, so plain right-click opens Neovim's
+popup menu and plain drag makes a visual selection.
 
-The tradeoff is losing drag to resize splits, which is what the
-`<leader>w` resizes and the repeatable `<C-Up>` family exist for. See
-|hanyue-keys-window|.
+Hold Shift to give the click back to the terminal. Most terminals honour
+this (iTerm2 uses Option instead):
+
+    Shift + drag          the terminal's own text selection
+    Shift + right-click   the terminal's own copy / paste
+
+It was `''` for a while, which kept the terminal's clicks but lost
+scrolling.
 
 OTHER SMALL THINGS
 mini.statusline's location section is overridden to `%2l:%-2v`.

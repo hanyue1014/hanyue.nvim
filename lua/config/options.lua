@@ -30,11 +30,10 @@ vim.g.have_nerd_font = true
 vim.o.number = true
 vim.o.relativenumber = true
 
--- Mouse mode off. Kickstart ships this as 'a', but it interferes with the
--- terminal's own mouse behaviour, so selecting and copying stops working
--- the way it does in every other terminal program.
--- The ascii art up top did say no mouse required.
-vim.o.mouse = ''
+-- Mouse mode on, mostly for the scroll wheel. It does take clicks away from
+-- the terminal, so hold Shift to get them back: Shift + drag is the
+-- terminal's own selection, Shift + right-click its own copy/paste.
+vim.o.mouse = 'a'
 
 -- Don't show the mode, since it's already in the status line
 -- I think the some theme disables this
