@@ -21,9 +21,20 @@ vim.pack.add {
   gh 'MunifTanjim/nui.nvim',
 }
 
--- `Neotree toggle` closes it again from anywhere, including from inside the
--- tree itself, so one key does both jobs and no extra window mapping needed.
-vim.keymap.set('n', '<leader>fe', '<Cmd>Neotree toggle<CR>', { desc = '[F]ile [E]xplorer', silent = true })
+-- Toggling closes it again from anywhere, including from inside the tree
+-- itself, so one key does both jobs and no extra window mapping needed.
+--
+-- `follow_current_file` below makes opening the tree reveal the current
+-- buffer. On a buffer that isn't a real file, like the start screen
+-- (`ministarter://1`), neo-tree thinks it's a file outside the cwd and asks
+-- "File not in cwd. Change cwd to ministarter:/?". So only reveal when the
+-- buffer is a normal file (`buftype` empty).
+vim.keymap.set(
+  'n',
+  '<leader>fe',
+  function() require('neo-tree.command').execute { toggle = true, reveal = vim.bo.buftype == '' } end,
+  { desc = '[F]ile [E]xplorer', silent = true }
+)
 
 -- Neo-tree's own defaults are already Nerd Font glyphs, and its file icon
 -- provider calls `require('nvim-web-devicons')` at render time, which

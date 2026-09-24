@@ -108,7 +108,9 @@ starter.setup {
   items = {
     { section = actions, name = 'Find file', action = telescope 'find_files' },
     { section = actions, name = 'Grep text', action = telescope 'live_grep' },
-    { section = actions, name = 'Explorer', action = 'Neotree' },
+    -- reveal = false, or neo-tree tries to find the start screen itself in
+    -- the tree and asks to change cwd to `ministarter:/`
+    { section = actions, name = 'Explorer', action = function() require('neo-tree.command').execute { reveal = false } end },
     { section = actions, name = 'New file', action = 'enew' },
     { section = actions, name = 'Config', action = telescope('find_files', { cwd = vim.fn.stdpath 'config', follow = true }) },
     { section = actions, name = 'Update plugins', action = function() vim.pack.update() end },
