@@ -52,6 +52,16 @@ CORE                                                        *hanyue-keys-core*
     <Esc>       normal      clear search highlight (nohlsearch)
     <Esc><Esc>  terminal    exit terminal mode
 
+Word delete in insert mode, like other editors:
+
+    <C-BS>      insert      delete previous word (<C-w>)
+    <C-h>       insert      same, terminals send ctrl+backspace as <C-h>
+    <C-Del>     insert      delete next word, joins the next line at EOL
+
+Indenting:
+
+    >  <        visual      indent / outdent, keeps the selection
+
 Black hole register, so the yank register survives. Normal and visual:
 
     <leader>d   delete without yanking
@@ -120,6 +130,7 @@ Telescope, `lua/custom/plugins/telescope.lua`:
 neo-tree, `lua/custom/plugins/neo-tree.lua`:
 
     <leader>fe        file explorer, toggles
+    <Esc>             inside the tree, closes it
 
 Deliberately not under the prefix:
 
@@ -155,6 +166,10 @@ LSP defaults already live. `<leader>l*` is the discoverable one, the
     grn         rename                 also <leader>lr
     gra         code action            also <leader>la   (normal and visual)
     grD         goto declaration, not definition
+
+`lua/config/keymaps.lua`, global, Neovim's built in `gc`:
+
+    <leader>lc  toggle comment         line in normal, selection in visual
     <leader>th  toggle inlay hints, only if the server supports them
 
 `lua/custom/plugins/conform.lua`, global, works with no server attached:
