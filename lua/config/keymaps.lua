@@ -41,6 +41,10 @@ vim.keymap.set('i', '<C-Del>', function()
   return '<C-o>"_dw'
 end, { expr = true, desc = 'Delete next word' })
 
+-- visual: stay in visual mode after indenting, so >>> or <<< just works
+vim.keymap.set('v', '>', '>gv', { desc = 'Indent and keep selection' })
+vim.keymap.set('v', '<', '<gv', { desc = 'Outdent and keep selection' })
+
 -- visual: move the selection (thank you theprimeagen)
 vim.keymap.set('v', 'J', ":m '>+1<cr>gv=gv", { desc = 'Move selection down' })
 vim.keymap.set('v', 'K', ":m '<-2<cr>gv=gv", { desc = 'Move selection up' })
