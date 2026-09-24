@@ -79,6 +79,12 @@ require('neo-tree').setup {
     -- On the right, so the tree doesn't shove my code sideways every time
     -- it opens and closes.
     position = 'right',
+    mappings = {
+      -- <Esc> closes the tree, like dismissing a sidebar. This replaces
+      -- neo-tree's default `cancel`, which only closes the preview (press P
+      -- again for that instead).
+      ['<esc>'] = 'close_window',
+    },
   },
   filesystem = {
     -- Finds and focuses the current file in the tree whenever I switch
