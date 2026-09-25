@@ -59,6 +59,20 @@ require 'config.commands'
 -- so it costs nothing there.
 require 'config.neovide'
 
+-- [[ ui2 ]]
+-- Neovim 0.12's built in replacement for the message and cmdline area.
+--   - no more "Press ENTER" prompts
+--   - `g<` opens past messages in a normal buffer (the pager), so they can
+--     be scrolled, searched and yanked like any other text
+--   - the cmdline gets highlighted as you type
+-- See `:help ui2`.
+--
+-- NOTE: still marked experimental. The module path is private (the `_` in
+-- `vim._core`) and was already renamed once (from `vim._extui`), so a new
+-- Neovim release may need this line updated. If it breaks or misbehaves,
+-- delete it and everything goes back to the old message area.
+require('vim._core.ui2').enable {}
+
 -- [[ Plugins ]]
 -- Loads every file in `lua/custom/plugins/`.
 require 'custom'
