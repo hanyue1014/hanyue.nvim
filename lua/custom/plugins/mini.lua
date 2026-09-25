@@ -40,6 +40,18 @@ require('mini.ai').setup {
 -- - sr)'  - [S]urround [R]eplace [)] [']
 require('mini.surround').setup()
 
+-- Jump anywhere on screen, like leap: <leader>j, type the character you're
+-- looking at, then the label that shows up on it. Looks at every window in
+-- the tab, so it jumps straight into another split too.
+require('mini.jump2d').setup {
+  -- mini's own mapping always runs its default mode (a label on every word,
+  -- not the one character one) and always maps visual mode too, so it's off
+  -- and <leader>j below does the job. Off also keeps it from taking Enter.
+  mappings = { start_jumping = '' },
+}
+-- `o` is after an operator: `d<leader>j` + target deletes up to it
+vim.keymap.set({ 'n', 'o' }, '<leader>j', function() MiniJump2d.start(MiniJump2d.builtin_opts.single_character) end, { desc = '[J]ump to a character on screen' })
+
 -- Simple and easy statusline.
 --  You could remove this setup call if you don't like it,
 --  and try some other statusline plugin
