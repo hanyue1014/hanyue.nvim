@@ -8,8 +8,10 @@ local gh = require('config.pack').gh
 -- Useful plugin to show you pending keybinds.
 vim.pack.add { gh 'folke/which-key.nvim' }
 require('which-key').setup {
-  -- Delay between pressing a key and opening which-key (milliseconds)
-  delay = 0,
+  -- Delay between pressing a key and opening which-key (milliseconds). Long
+  -- enough that typing a mapping I already know never flashes the popup, it
+  -- only shows up when I stop and think. Raise it if it still gets in the way.
+  delay = 500,
   icons = { mappings = vim.g.have_nerd_font },
   -- Document existing key chains
   spec = {
