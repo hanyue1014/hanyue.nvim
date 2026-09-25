@@ -29,12 +29,20 @@ Neovim. See |vim.pack|.
     lua/config/indent.lua        tab widths, global and per filetype
     lua/config/keymaps.lua       keymaps that need no plugin
     lua/config/autocmds.lua      autocommands that need no plugin
+    lua/config/commands.lua      my own :Commands (:CopyPath)
+    lua/config/neovide.lua       GUI settings, does nothing outside Neovide
     lua/config/pack.lua          vim.pack build hooks, gh() url helper
     lua/custom/init.lua          loader for the folder below
     lua/custom/plugins/*.lua     one file per plugin
+    lua/custom/lspconfig/*.lua   one file per language server's extras
 <
 Each plugin file is self contained. It calls `vim.pack.add` for what it
 needs, then that plugin's `setup()`. Deleting the file removes the plugin.
+
+`lua/custom/lspconfig/` holds whatever a server needs beyond its entry in
+the `servers` table (commands, autocommands, helpers), one file per server,
+so `lsp.lua` stays about wiring. `lsp.lua` loads every file in it. Only
+`clangd.lua` so far, see |hanyue-clangd|.
 
 ================================================================================
 2. KEYMAPS SET BY THIS CONFIG                                    *hanyue-keys*
@@ -51,6 +59,14 @@ CORE                                                        *hanyue-keys-core*
     kj          insert      exit insert mode
     <Esc>       normal      clear search highlight (nohlsearch)
     <Esc><Esc>  terminal    exit terminal mode
+    j  k        normal, visual   one screen row on a wrapped line (gj/gk).
+                            With a count (5j) they still move real lines,
+                            so relativenumber jumps land where it says
+
+"Visual" in this document means visual mode only. Every visual mapping in
+the config is set for `x`, never `v`, because `v` also covers select mode,
+where typing should replace the selection (the |hanyue-clangd| popup
+starts that way). With `v`, typing J or > there would move or indent lines.
 
 Word delete in insert mode, like other editors:
 
@@ -79,9 +95,25 @@ Moving lines:
 
 <A-j> and <A-k> are shown as <M-j> and <M-k> by `:map`. Same thing.
 
-Diagnostics:
+Diagnostics, which-key group "[L]anguage [D]iagnostics". Every one opens
+the float, see |hanyue-diagnostics|:
 
-    <leader>q   diagnostic loclist (vim.diagnostic.setloclist)
+    <leader>ldp   previous diagnostic, same as [d
+    <leader>ldn   next diagnostic, same as ]d
+    <leader>ldl   every diagnostic on the current line
+    <leader>ldq   this file's diagnostics in the location list, full
+                  messages (vim.diagnostic.setloclist, was <leader>q)
+
+Jumping, mini.jump2d, `lua/custom/plugins/mini.lua`:
+
+    <leader>j   normal, operator   jump to any visible spot, in any window
+                of the tab: press it, type the character you're looking
+                at, then the label shown on it. After an operator it acts
+                up to the target (d<leader>j + target). Not visual. Not
+                dot-repeatable, deliberately kept as a plain function.
+
+mini's own `<CR>` mapping is disabled, it would take over Enter in every
+buffer, the quickfix list included.
 
 --------------------------------------------------------------------------------
 WINDOWS                                                   *hanyue-keys-window*
@@ -131,6 +163,12 @@ neo-tree, `lua/custom/plugins/neo-tree.lua`:
 
     <leader>fe        file explorer, toggles
     <Esc>             inside the tree, closes it
+
+Paths, `lua/config/keymaps.lua`:
+
+    <leader>fp        show the current file's full path. Names otherwise
+                      show relative to the cwd, see |hanyue-cwd|.
+                      `:CopyPath` copies it instead.
 
 Deliberately not under the prefix:
 
@@ -227,6 +265,13 @@ mini.ai, the only mappings explicitly overridden in `setup()`:
 These were moved off mini's defaults so they stop clashing with Neovim's
 treesitter incremental selection on `an` and `in`. See
 |treesitter-incremental-selection|.
+
+Start screen (mini.starter), buffer local:
+
+    j  k        move between items. They are taken out of the letters that
+                filter the list, so an item starting with j or k is reached
+                with j/k rather than by typing it
+    <CR>        run the item
 
 Formatting lives with the LSP actions now, see |hanyue-keys-lsp|.
 `<leader>f` is the [F]ind prefix.
@@ -326,7 +371,8 @@ The non obvious decisions in this config, and why they are there.
 
 LOAD ORDER
 `init.lua` requires `config.options`, `config.indent`, `config.pack`,
-`config.keymaps`, `config.autocmds`, then `custom`. The first three are
+`config.keymaps`, `config.autocmds`, `config.commands`, `config.neovide`,
+then `custom`. The first three are
 order dependent. `config.options` sets the leader key, which must happen
 before any plugin loads or the plugin captures the wrong leader.
 `config.pack` registers the `PackChanged` build hooks, which must happen
@@ -454,7 +500,7 @@ when the compiler isn't named like cl.exe. mingw alone is then enough and
 MSVC is not needed. The guard does nothing when `cl.exe` exists or when CC
 is already set by hand, so a real MSVC setup is untouched.
 
-If parsers still fail, check `gcc --version` in a *fresh* shell. Chocolatey
+If parsers still fail, check `gcc --version` in a fresh shell. Chocolatey
 adds it to PATH at install time, but an editor or terminal that was
 already open keeps the stale PATH until restarted.
 
@@ -492,10 +538,25 @@ and hides them again.
 
 `follow_current_file` is enabled. It only finds and focuses the current
 file inside the tree, it does not re-root or narrow anything, the full
-tree stays. Root is controlled separately by `bind_to_cwd` and the `.`
-key. Its companion `leave_dirs_open` is left at neo-tree's default
+tree stays. Its companion `leave_dirs_open` is left at neo-tree's default
 `false`, so directories auto expanded to reveal a file collapse again
 afterwards.
+
+`bind_to_cwd = false`: the tree's root and Neovim's cwd are independent.
+neo-tree's default ties them both ways, so `.` on a folder, <BS>, or
+answering yes to "File not in cwd. Change cwd?" ran `:tcd` on the whole
+tab, and live grep and friends started searching somewhere else. Now
+those only move the tree's own root. The cost: `:cd` no longer moves the
+tree either.
+
+Opening the tree reveals the current buffer only when it is a real file
+(`buftype` empty), in `<leader>fe` and in the start screen's Explorer
+item. On the start screen buffer (`ministarter://1`) neo-tree used to
+treat that name as a file outside the cwd and ask to change cwd to
+`ministarter:/`.
+
+Opening a file from the tree closes the tree, through a `file_opened`
+event handler.
 
 Icons follow `vim.g.have_nerd_font`, which is currently `true`. In that
 case neo-tree's own defaults are left untouched: folder glyphs come from
@@ -522,15 +583,83 @@ LuaSnip is pinned to the `2.*` range and blink.cmp to `1.*`, using
 `vim.version.range()`. blink.cmp's fuzzy matcher is set to the Lua
 implementation rather than the Rust one, so nothing needs downloading.
 
-DIAGNOSTICS
+DIAGNOSTICS                                             *hanyue-diagnostics*
 Virtual text on, virtual lines off, no updates while in insert mode,
 severity sorted, rounded float border, underline only for WARN and above.
 Jumping with `[d` or `]d` opens the float automatically, which is the
-`jump.on_jump` handler.
+`jump.on_jump` handler. `<leader>ldp` and `<leader>ldn` call the same
+`vim.diagnostic.jump()`, so they get the float from that one handler too.
+
+The virtual text is cut off at the window edge for long messages. The
+float (any of the keys above) and the list (`<leader>ldq`, it wraps) both
+show the whole message.
 
 WHICH-KEY
-`delay = 0`, so the popup is immediate rather than after a pause. Pressing
-<Space> and waiting is the intended way to explore.
+`delay = 500`, so the popup only shows after pausing half a second on a
+prefix. Typing a mapping you already know never flashes it. Pressing
+<Space> and waiting is the way to explore.
+
+THE CWD AND FILE NAMES                                          *hanyue-cwd*
+Nothing in this config changes the cwd. Only `:cd`, `:lcd` and `:tcd`
+typed by hand do. `:pwd` shows it. See NEO-TREE above for the one plugin
+that used to.
+
+Every buffer's name shows relative to the cwd (`src/x.c`) however it was
+opened. A buffer keeps the name it was opened with, and the start screen
+opens relative paths while telescope and neo-tree open full ones, so `:f`
+and <C-g> showed either. A `BufWinEnter` autocommand in `autocmds.lua`
+runs `:cd .`, which re-shortens every name without moving anywhere:
+`noautocmd` so no DirChanged fires, and `lcd`/`tcd` when the window or tab
+has its own directory so that stays. Renaming the buffer instead would
+break `:w` (E13: File exists).
+
+The full path: `<leader>fp` shows it, `:CopyPath` copies it, `1<C-g>`
+prints it.
+
+START SCREEN
+mini.starter, set up in `mini.lua`: ASCII header and greeting, an Actions
+section (find file, grep, explorer, new file, config, update plugins,
+quit), the six most recent files in the cwd, and a footer with the date,
+plugin count and version. It takes over the empty startup buffer and wipes
+it when a file is opened, so no `[No Name]` is left in the buffer list.
+`silent = true` stops the "(mini.starter) Query:" line, which used to
+linger after leaving the screen.
+
+CLANGD INCLUDE PATHS                                         *hanyue-clangd*
+`lua/custom/lspconfig/clangd.lua`. VS Code's `${workspaceFolder}/**` for
+clangd: it scans a folder for every directory holding a header and writes
+them into a `compile_flags.txt` as `-I` lines, nothing else.
+
+    :ClangdScan     open the popup, scan, write compile_flags.txt
+    :ClangdReset    undo it in a folder: removes a compile_flags.txt that
+                    is only -I lines, and an empty .clangd-ignore. Hand
+                    written ones are left alone. Asks again this session
+    :ClangdStatus   which flags file clangd would use for this buffer,
+                    by repeating clangd's own lookup
+
+When clangd attaches to a file inside the startup folder (`nvim <dir>`,
+`nvim .`, or plain `nvim`, never `nvim <file>`), it walks up from the file
+to the startup folder or `.git`. If none of `compile_commands.json`,
+`compile_flags.txt`, `.clangd`, `.clangd-ignore` is on the way, the popup
+opens. At most once per session.
+
+The popup is two floats in the theme's colours: the explanation, and a
+one line box holding the folder, selected in select mode.
+
+    <CR> with it selected       scan that folder
+    another folder, <CR>        scan that one
+    n / no (any case), <CR>     write .clangd-ignore, never ask there again
+    empty, <Esc>, leaving it    not now, nothing written
+Keys are ignored for the first 300ms, so keys already being typed when it
+pops up can't answer it.
+
+It refuses to write in $HOME or a drive root, since clangd searches every
+parent folder and the file would apply to every C file under it. Scans
+stop, writing nothing, past 8 levels deep or 256 header folders: point it
+at a narrower folder then. `build`, `out`, `node_modules` and hidden
+folders are skipped. The generated names are added to `.git/info/exclude`.
+TODO in the code: in a linked git worktree that exclude file is the wrong
+one.
 
 MOUSE
 `mouse` is `'a'`, mainly so the scroll wheel works. With it on, the
@@ -547,6 +676,9 @@ It was `''` for a while, which kept the terminal's clicks but lost
 scrolling.
 
 OTHER SMALL THINGS
+nvim-autopairs closes brackets and quotes as you type them. It's the one
+kickstart example still loaded, from the bottom of `init.lua`
+(`kickstart.plugins.autopairs`), not from `lua/custom/plugins/`.
 mini.statusline's location section is overridden to `%2l:%-2v`.
 todo-comments runs with `signs = false`.
 `vim.loader.enable()` is the first line executed, for the module cache.
