@@ -10,6 +10,12 @@
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
+-- better movement for word wrap
+-- j/k move by screen row on wrapped lines, but `5j` still counts real lines.
+-- `x` not `v`, so typing j/k in select mode still replaces the selection.
+vim.keymap.set({ 'n', 'x' }, 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, desc = 'Down (screen row when wrapped)' })
+vim.keymap.set({ 'n', 'x' }, 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, desc = 'Up (screen row when wrapped)' })
+
 -- MUST: kj to escape
 vim.keymap.set('i', 'kj', '<Esc>', { desc = 'Exit insert mode' })
 
