@@ -247,15 +247,20 @@ end
 
 -- [[ Popup ]]
 -- A prompt at the bottom of the screen was easy to miss, or to type straight
--- through. So this is a floating window in the middle of the screen, in
--- warning colours, saying exactly what gets written where. It opens in
--- insert mode on a line holding the folder:
+-- through. So this is two boxes in the middle of the screen, stacked like
+-- telescope's prompt and results: the explanation on top (read only, can't
+-- be focused) and a one line box below holding the folder. They're separate
+-- buffers so holding backspace can only ever eat the folder, never the
+-- explanation (it did, once).
 --
---   <CR> on the folder          scan it, write compile_flags.txt there
---   n / N / no / No / NO, <CR>  never ask in this folder. Has to be typed out
---                               in full, no single key does this
---   empty line, <CR>            not now
---   <Esc> / <C-c>               not now
+-- The folder starts out selected (select mode), so typing replaces it:
+--   <CR> while still selected    scan that folder, write compile_flags.txt.
+--                                <CR> is mapped here, it doesn't delete it
+--   a different folder, <CR>     scan that one instead
+--   n / N / no / No / NO, <CR>   never ask in this folder. Typed out in
+--                                full, no single key does this
+--   empty, <CR>                  not now
+--   <Esc> / <C-c>                not now
 --
 -- Keys do nothing for the first 300ms, so keys already being typed when it
 -- pops up (the "scooting past" case) can't answer it by accident. Leaving
@@ -268,79 +273,131 @@ local function ask(default, on_done)
   -- Home shows as ~ to keep the path short. absolute() expands ~ again, so
   -- confirming it as shown gives back the real folder.
   local shown = is_inside(default, home) and '~' .. default:sub(#home + 1) or default
-  local text = {
+  local info = {
     'clangd has no include paths for this project.',
     '',
     'Enter scans the folder below for header folders and WRITES',
     'compile_flags.txt into it (one -I line per header folder).',
-    'Type n or no instead to never be asked about this folder again.',
     '',
-    shown,
+    'The folder is selected, typing replaces it. Type another folder',
+    'to scan that one, or n / no to never be asked about it again.',
   }
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.bo[buf].bufhidden = 'wipe'
-  -- No completion menu while typing, blink could grab <CR> for itself
-  vim.b[buf].completion = false
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, text)
+  local icon = vim.g.have_nerd_font and '\u{f07b}  ' or '> '
+  -- Looks like every other float (telescope included): the colorscheme's
+  -- NormalFloat / FloatBorder / FloatTitle / FloatFooter, and 'winborder'
+  -- when that's set, else the thin rounded border telescope draws. Only the
+  -- warning icon gets its own colour, the theme's DiagnosticWarn.
+  local border = vim.o.winborder == '' and 'rounded' or nil
 
-  -- As wide as the text above (plus the padding column), never wider than
-  -- the screen. A long path wraps instead of stretching the popup.
-  local footer = ' <CR> confirm   n/no <CR> never ask here   <Esc> not now '
-  local width = math.min(vim.o.columns - 4, #text[5] + 4)
-  local win = vim.api.nvim_open_win(buf, true, {
-    relative = 'editor',
-    row = 0,
-    col = math.floor((vim.o.columns - width) / 2),
-    width = width,
-    height = #text,
-    style = 'minimal',
-    -- Looks like every other float (telescope included): the colorscheme's
-    -- NormalFloat / FloatBorder / FloatTitle / FloatFooter, and 'winborder'
-    -- when that's set, else the thin rounded border telescope draws. Only
-    -- the warning icon gets its own colour, the theme's DiagnosticWarn.
-    border = vim.o.winborder == '' and 'rounded' or nil,
-    title = {
-      { ' ' },
-      { vim.g.have_nerd_font and '\u{f071} ' or '! ', 'DiagnosticWarn' },
-      { 'clangd will write a file in your repo ', 'FloatTitle' },
-    },
-    title_pos = 'center',
-    footer = footer,
-    footer_pos = 'center',
-    zindex = 200,
-  })
-  -- A column of padding on the left, like telescope's lists
-  vim.wo[win].statuscolumn = ' '
-  -- Long paths wrap at a `/` (it's in the default 'breakat') rather than
-  -- mid name, and the continued rows are indented under the path
-  vim.wo[win].wrap = true
-  vim.wo[win].linebreak = true
-  vim.wo[win].breakindent = false
-  vim.wo[win].showbreak = '    '
+  -- As wide as the explanation (plus the padding column), never wider than
+  -- the screen. A long folder wraps instead of stretching the boxes.
+  local widest = 0
+  for _, line in ipairs(info) do
+    widest = math.max(widest, #line)
+  end
+  local width = math.min(vim.o.columns - 4, widest + 3)
+
+  local function scratch(lines)
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[buf].bufhidden = 'wipe'
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    return buf
+  end
+  local info_buf = scratch(info)
+  vim.bo[info_buf].modifiable = false
+  local input_buf = scratch { shown }
+  -- No completion menu while typing, blink could grab <CR> for itself
+  vim.b[input_buf].completion = false
+
+  -- Rows the folder box needs: icon + text + one cell for the cursor after
+  -- the last character, wrapped at the box width less the padding column
+  local function input_height()
+    local line = vim.api.nvim_buf_get_lines(input_buf, 0, 1, false)[1] or ''
+    local cells = vim.fn.strdisplaywidth(icon) + vim.fn.strdisplaywidth(line) + 1
+    return math.max(1, math.ceil(cells / (width - 1)))
+  end
+
+  -- Both boxes stacked and centred as one block, 2 extra rows per border.
+  -- The top edge is fixed when it opens, so the folder box only grows and
+  -- shrinks downwards as you type instead of the whole thing jumping.
+  local top = math.max(0, math.floor((vim.o.lines - (#info + 2) - (input_height() + 2)) / 2) - 1)
+  local function layout()
+    local height = input_height()
+    local col = math.floor((vim.o.columns - width) / 2)
+    return { relative = 'editor', row = top, col = col, width = width, height = #info },
+      { relative = 'editor', row = top + #info + 2, col = col, width = width, height = height }
+  end
+
+  local info_cfg, input_cfg = layout()
+  local info_win = vim.api.nvim_open_win(
+    info_buf,
+    false,
+    vim.tbl_extend('force', info_cfg, {
+      style = 'minimal',
+      border = border,
+      focusable = false,
+      zindex = 200,
+      title = {
+        { ' ' },
+        { vim.g.have_nerd_font and '\u{f071} ' or '! ', 'DiagnosticWarn' },
+        { 'clangd will write a file in your repo ', 'FloatTitle' },
+      },
+      title_pos = 'center',
+    })
+  )
+  local input_win = vim.api.nvim_open_win(
+    input_buf,
+    true,
+    vim.tbl_extend('force', input_cfg, {
+      style = 'minimal',
+      border = border,
+      zindex = 200,
+      title = ' Folder ',
+      title_pos = 'center',
+      footer = ' <CR> confirm   n/no <CR> never ask here   <Esc> not now ',
+      footer_pos = 'center',
+    })
+  )
+  for _, win in ipairs { info_win, input_win } do
+    -- A column of padding on the left, like telescope's lists
+    vim.wo[win].statuscolumn = ' '
+    vim.wo[win].wrap = true
+  end
+  -- Plain wrapping at the box edge, so input_height() is exact
+  vim.wo[input_win].linebreak = false
+  vim.wo[input_win].breakindent = false
+  vim.wo[input_win].showbreak = 'NONE'
 
   local ns = vim.api.nvim_create_namespace 'hanyue-clangd-popup'
-  vim.api.nvim_buf_set_extmark(buf, ns, 2, 0, { end_row = 4, hl_group = 'WarningMsg' })
-  vim.api.nvim_buf_set_extmark(buf, ns, #text - 1, 0, { end_row = #text, hl_group = 'Directory' })
+  vim.api.nvim_buf_set_extmark(info_buf, ns, 2, 0, { end_row = 4, hl_group = 'WarningMsg' })
+  vim.api.nvim_buf_set_extmark(input_buf, ns, 0, 0, { end_row = 1, hl_group = 'Directory' })
   -- Folder icon in front of the path. It's drawn, not part of the text, so
   -- it can't end up in the answer and the cursor can't land on it.
-  vim.api.nvim_buf_set_extmark(buf, ns, #text - 1, 0, {
-    virt_text = { { vim.g.have_nerd_font and '\u{f07b}  ' or '> ', 'Directory' } },
+  vim.api.nvim_buf_set_extmark(input_buf, ns, 0, 0, {
+    virt_text = { { icon, 'Directory' } },
     virt_text_pos = 'inline',
     right_gravity = false,
   })
 
-  -- Now that it's drawn, size it to what's actually on screen, plus a row
-  -- so the cursor after the last character never pushes the text up. Then
-  -- centre it.
-  local height = math.min(vim.o.lines - 4, vim.api.nvim_win_text_height(win, {}).all + 1)
-  vim.api.nvim_win_set_config(win, {
-    relative = 'editor',
-    row = math.max(0, math.floor((vim.o.lines - height) / 2) - 2),
-    col = math.floor((vim.o.columns - width) / 2),
-    height = height,
+  -- The folder box grows and shrinks with what's typed
+  vim.api.nvim_create_autocmd({ 'TextChanged', 'TextChangedI' }, {
+    buffer = input_buf,
+    callback = function()
+      if not vim.api.nvim_win_is_valid(input_win) then return end
+      local new_info, new_input = layout()
+      vim.api.nvim_win_set_config(info_win, new_info)
+      vim.api.nvim_win_set_config(input_win, new_input)
+    end,
   })
-  vim.api.nvim_win_set_cursor(win, { #text, 0 })
-  vim.cmd 'startinsert!'
+
+  -- Folder selected in select mode (\7 is <C-g>, visual -> select), so the
+  -- first key typed replaces it. Nothing to select: plain insert mode.
+  vim.api.nvim_win_set_cursor(input_win, { 1, 0 })
+  if shown ~= '' then
+    vim.cmd 'normal! 0vg_\7'
+  else
+    vim.cmd 'startinsert'
+  end
 
   local done, ready = false, false
   vim.defer_fn(function() ready = true end, POPUP_GRACE_MS)
@@ -348,22 +405,26 @@ local function ask(default, on_done)
   local function finish(answer)
     if done then return end
     done = true
+    -- Out of insert / select mode before the boxes go away
     vim.cmd.stopinsert()
-    if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
+    if vim.fn.mode():match '^[vVsS\19\22]' then vim.cmd 'normal! \27' end
+    for _, win in ipairs { input_win, info_win } do
+      if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
+    end
     on_done(answer)
   end
   local function map(lhs, fn)
-    vim.keymap.set({ 'n', 'i' }, lhs, function()
+    vim.keymap.set({ 'n', 'i', 's' }, lhs, function()
       if ready then fn() end
-    end, { buffer = buf, nowait = true })
+    end, { buffer = input_buf, nowait = true })
   end
 
-  map('<CR>', function() finish(vim.api.nvim_buf_get_lines(buf, -2, -1, false)[1] or '') end)
+  map('<CR>', function() finish(vim.api.nvim_buf_get_lines(input_buf, 0, 1, false)[1] or '') end)
   map('<Esc>', function() finish(nil) end)
   map('<C-c>', function() finish(nil) end)
 
   vim.api.nvim_create_autocmd('WinLeave', {
-    buffer = buf,
+    buffer = input_buf,
     once = true,
     callback = function() vim.schedule(function() finish(nil) end) end,
   })
