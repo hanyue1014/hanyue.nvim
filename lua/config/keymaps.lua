@@ -64,6 +64,10 @@ vim.keymap.set('x', 'K', ":m '<-2<cr>gv=gv", { desc = 'Move selection up' })
 vim.keymap.set('n', '<A-j>', '<cmd>m .+1<cr>==', { desc = 'Move line down' })
 vim.keymap.set('n', '<A-k>', '<cmd>m .-2<cr>==', { desc = 'Move line up' })
 
+-- file names show relative to the cwd (autocmds.lua), this shows the full one.
+-- `:CopyPath` puts it on the clipboard instead.
+vim.keymap.set('n', '<leader>fp', function() vim.notify(vim.fn.expand '%:p') end, { desc = '[F]ile: full [P]ath' })
+
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
@@ -92,7 +96,12 @@ vim.diagnostic.config {
   },
 }
 
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+-- [L]anguage [D]iagnostics. Every one of these opens the float: prev/next go
+-- through `jump`, so `on_jump` above opens it, same as `[d` / `]d`.
+vim.keymap.set('n', '<leader>ldp', function() vim.diagnostic.jump { count = -1 } end, { desc = '[L]anguage [D]iagnostics: [P]revious' })
+vim.keymap.set('n', '<leader>ldn', function() vim.diagnostic.jump { count = 1 } end, { desc = '[L]anguage [D]iagnostics: [N]ext' })
+vim.keymap.set('n', '<leader>ldl', function() vim.diagnostic.open_float { scope = 'line' } end, { desc = '[L]anguage [D]iagnostics: this [L]ine' })
+vim.keymap.set('n', '<leader>ldq', vim.diagnostic.setloclist, { desc = '[L]anguage [D]iagnostics: [Q]uickfix list' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which

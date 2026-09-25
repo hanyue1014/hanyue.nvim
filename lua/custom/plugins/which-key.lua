@@ -17,6 +17,7 @@ require('which-key').setup {
   spec = {
     { '<leader>f', group = '[F]ind / [F]ile', mode = { 'n', 'x' } },
     { '<leader>l', group = '[L]anguage', mode = { 'n', 'x' } },
+    { '<leader>ld', group = '[L]anguage [D]iagnostics' },
     { '<leader>t', group = '[T]oggle' },
     { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'x' } }, -- Enable gitsigns recommended keymaps first
     { '<leader>w', group = '[W]indow Actions' },
