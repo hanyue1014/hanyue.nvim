@@ -8,6 +8,7 @@
 -- headers and writes them into a compile_flags.txt as `-I` lines.
 --
 --   :ClangdScan     scan a folder and write compile_flags.txt
+--   :ClangdReset    undo :ClangdScan, for debugging
 --   :ClangdStatus   which config clangd would pick up for this buffer
 --
 -- Pure Lua (vim.fs / vim.uv), no shelling out, so it works on native
@@ -182,6 +183,16 @@ local function git_dir(dir)
 end
 
 -- No slash in the patterns, so they match at any depth in the repo
+--
+-- TODO: broken in linked worktrees (`git worktree add`). There `.git` points
+-- at `<main repo>/.git/worktrees/<name>`, so this writes
+-- `.git/worktrees/<name>/info/exclude`, which git never reads. Git reads
+-- info/exclude from the main repo's .git, found through the `commondir`
+-- file inside the worktree's git dir. Symptom: compile_flags.txt and
+-- .clangd-ignore show up as untracked in `git status`. Fix: if
+-- `git .. '/commondir'` exists, resolve it (relative to `git`) and write
+-- `<that>/info/exclude` instead. Submodules are fine, their git dir is a
+-- full repo.
 local function add_git_excludes(dir)
   local git = git_dir(dir)
   if not git then return end
@@ -319,6 +330,49 @@ vim.api.nvim_create_autocmd('LspAttach', {
     vim.schedule(clangd_scan)
   end,
 })
+
+-- [[ :ClangdReset ]]
+-- Undo :ClangdScan in a folder (default: the startup folder), as if it had
+-- never run. For debugging.
+--   - deletes compile_flags.txt, but only one made by :ClangdScan (nothing
+--     but -I lines). A hand written one is left alone.
+--   - deletes .clangd-ignore, but only an empty one (ours always is)
+--   - forgets that it already asked this session, so it asks again
+--   - restarts clangd so it drops the old flags, which also brings the
+--     prompt straight back up if a C file is open
+-- The .git/info/exclude lines stay. They only hide untracked files, and
+-- taking them out could expose a .clangd of yours that they also cover.
+vim.api.nvim_create_user_command('ClangdReset', function(opts)
+  local dir = opts.args ~= '' and absolute(opts.args) or get_startup_dir() or vim.fs.normalize(vim.uv.cwd())
+  local removed = {}
+
+  local flags = dir .. '/compile_flags.txt'
+  if exists(flags) then
+    local lines = read_lines(flags)
+    local ours = #vim.tbl_filter(function(line) return not line:match '^%-I' end, lines) == 0
+    if ours then
+      os.remove(flags)
+      table.insert(removed, 'compile_flags.txt')
+    else
+      notify(flags .. ' has more than -I lines, so :ClangdScan did not write it. Left alone.', vim.log.levels.WARN)
+    end
+  end
+
+  local ignore = dir .. '/.clangd-ignore'
+  if exists(ignore) then
+    if #read_lines(ignore) == 0 then
+      os.remove(ignore)
+      table.insert(removed, '.clangd-ignore')
+    else
+      notify(ignore .. ' is not empty, so :ClangdScan did not write it. Left alone.', vim.log.levels.WARN)
+    end
+  end
+
+  auto_prompted = false
+  if #removed == 0 then return notify('nothing to reset in ' .. dir) end
+  notify(('removed %s from %s'):format(table.concat(removed, ' and '), dir))
+  restart_clangd()
+end, { nargs = '?', complete = 'dir', desc = 'Undo :ClangdScan in a folder' })
 
 -- [[ :ClangdStatus ]]
 -- clangd has no request for "which compile command did you use", that only
