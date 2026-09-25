@@ -265,6 +265,9 @@ end
 local POPUP_GRACE_MS = 300
 
 local function ask(default, on_done)
+  -- Home shows as ~ to keep the path short. absolute() expands ~ again, so
+  -- confirming it as shown gives back the real folder.
+  local shown = is_inside(default, home) and '~' .. default:sub(#home + 1) or default
   local text = {
     'clangd has no include paths for this project.',
     '',
@@ -272,7 +275,7 @@ local function ask(default, on_done)
     'compile_flags.txt into it (one -I line per header folder).',
     'Type n or no instead to never be asked about this folder again.',
     '',
-    default,
+    shown,
   }
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].bufhidden = 'wipe'
@@ -280,29 +283,62 @@ local function ask(default, on_done)
   vim.b[buf].completion = false
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, text)
 
+  -- As wide as the text above (plus the padding column), never wider than
+  -- the screen. A long path wraps instead of stretching the popup.
   local footer = ' <CR> confirm   n/no <CR> never ask here   <Esc> not now '
-  local width = math.min(vim.o.columns - 4, math.max(#text[5] + 2, #default + 2, 64))
-  local height = #text - 1 + math.ceil(math.max(#default, 1) / width)
+  local width = math.min(vim.o.columns - 4, #text[5] + 4)
   local win = vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
-    row = math.max(0, math.floor((vim.o.lines - height) / 2) - 2),
+    row = 0,
     col = math.floor((vim.o.columns - width) / 2),
     width = width,
-    height = height,
+    height = #text,
     style = 'minimal',
-    border = 'double',
-    title = (vim.g.have_nerd_font and ' \u{f071} ' or ' ! ') .. 'clangd will write a file in your repo ',
+    -- Looks like every other float (telescope included): the colorscheme's
+    -- NormalFloat / FloatBorder / FloatTitle / FloatFooter, and 'winborder'
+    -- when that's set, else the thin rounded border telescope draws. Only
+    -- the warning icon gets its own colour, the theme's DiagnosticWarn.
+    border = vim.o.winborder == '' and 'rounded' or nil,
+    title = {
+      { ' ' },
+      { vim.g.have_nerd_font and '\u{f071} ' or '! ', 'DiagnosticWarn' },
+      { 'clangd will write a file in your repo ', 'FloatTitle' },
+    },
     title_pos = 'center',
     footer = footer,
     footer_pos = 'center',
     zindex = 200,
   })
+  -- A column of padding on the left, like telescope's lists
+  vim.wo[win].statuscolumn = ' '
+  -- Long paths wrap at a `/` (it's in the default 'breakat') rather than
+  -- mid name, and the continued rows are indented under the path
   vim.wo[win].wrap = true
-  vim.wo[win].winhighlight = 'FloatBorder:DiagnosticWarn,FloatTitle:DiagnosticWarn,FloatFooter:Comment'
+  vim.wo[win].linebreak = true
+  vim.wo[win].breakindent = false
+  vim.wo[win].showbreak = '    '
 
   local ns = vim.api.nvim_create_namespace 'hanyue-clangd-popup'
   vim.api.nvim_buf_set_extmark(buf, ns, 2, 0, { end_row = 4, hl_group = 'WarningMsg' })
   vim.api.nvim_buf_set_extmark(buf, ns, #text - 1, 0, { end_row = #text, hl_group = 'Directory' })
+  -- Folder icon in front of the path. It's drawn, not part of the text, so
+  -- it can't end up in the answer and the cursor can't land on it.
+  vim.api.nvim_buf_set_extmark(buf, ns, #text - 1, 0, {
+    virt_text = { { vim.g.have_nerd_font and '\u{f07b}  ' or '> ', 'Directory' } },
+    virt_text_pos = 'inline',
+    right_gravity = false,
+  })
+
+  -- Now that it's drawn, size it to what's actually on screen, plus a row
+  -- so the cursor after the last character never pushes the text up. Then
+  -- centre it.
+  local height = math.min(vim.o.lines - 4, vim.api.nvim_win_text_height(win, {}).all + 1)
+  vim.api.nvim_win_set_config(win, {
+    relative = 'editor',
+    row = math.max(0, math.floor((vim.o.lines - height) / 2) - 2),
+    col = math.floor((vim.o.columns - width) / 2),
+    height = height,
+  })
   vim.api.nvim_win_set_cursor(win, { #text, 0 })
   vim.cmd 'startinsert!'
 
