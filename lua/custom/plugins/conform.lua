@@ -46,5 +46,5 @@ require('conform').setup {
 -- formatting moved here so the two don't fight.
 local function format() require('conform').format { async = true } end
 
-vim.keymap.set({ 'n', 'v' }, 'grf', format, { desc = 'LSP: Format buffer' })
-vim.keymap.set({ 'n', 'v' }, '<leader>lf', format, { desc = '[L]anguage: [F]ormat buffer' })
+vim.keymap.set({ 'n', 'x' }, 'grf', format, { desc = 'LSP: Format buffer' })
+vim.keymap.set({ 'n', 'x' }, '<leader>lf', format, { desc = '[L]anguage: [F]ormat buffer' })

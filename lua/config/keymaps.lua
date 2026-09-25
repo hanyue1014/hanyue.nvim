@@ -21,15 +21,15 @@ vim.keymap.set('i', 'kj', '<Esc>', { desc = 'Exit insert mode' })
 
 -- MUST: change/delete/paste without yanking
 -- delete without yanking
-vim.keymap.set({ 'n', 'v' }, '<leader>d', '"_d', { desc = 'Delete without yanking' })
-vim.keymap.set({ 'n', 'v' }, '<leader>D', '"_D', { desc = 'Delete to EOL without yanking' })
+vim.keymap.set({ 'n', 'x' }, '<leader>d', '"_d', { desc = 'Delete without yanking' })
+vim.keymap.set({ 'n', 'x' }, '<leader>D', '"_D', { desc = 'Delete to EOL without yanking' })
 
 -- change without yanking
-vim.keymap.set({ 'n', 'v' }, '<leader>c', '"_c', { desc = 'Change without yanking' })
-vim.keymap.set({ 'n', 'v' }, '<leader>C', '"_C', { desc = 'Change to EOL without yanking' })
+vim.keymap.set({ 'n', 'x' }, '<leader>c', '"_c', { desc = 'Change without yanking' })
+vim.keymap.set({ 'n', 'x' }, '<leader>C', '"_C', { desc = 'Change to EOL without yanking' })
 
 -- paste over selection without clobbering the register
-vim.keymap.set('v', '<leader>p', '"_dP', { desc = 'Paste without yanking replaced text' })
+vim.keymap.set('x', '<leader>p', '"_dP', { desc = 'Paste without yanking replaced text' })
 
 -- insert: ctrl+backspace / ctrl+delete delete a word, like other editors
 -- <C-w> is the built in "delete word before cursor", and it already joins
@@ -48,8 +48,8 @@ vim.keymap.set('i', '<C-Del>', function()
 end, { expr = true, desc = 'Delete next word' })
 
 -- visual: stay in visual mode after indenting, so >>> or <<< just works
-vim.keymap.set('v', '>', '>gv', { desc = 'Indent and keep selection' })
-vim.keymap.set('v', '<', '<gv', { desc = 'Outdent and keep selection' })
+vim.keymap.set('x', '>', '>gv', { desc = 'Indent and keep selection' })
+vim.keymap.set('x', '<', '<gv', { desc = 'Outdent and keep selection' })
 
 -- toggle comments with Neovim's built in `gc`, under the [L]anguage group.
 -- `remap` is needed because `gc`/`gcc` are mappings themselves, not builtins
@@ -57,8 +57,8 @@ vim.keymap.set('n', '<leader>lc', 'gcc', { remap = true, desc = '[L]anguage: [C]
 vim.keymap.set('x', '<leader>lc', 'gc', { remap = true, desc = '[L]anguage: [C]omment selection' })
 
 -- visual: move the selection (thank you theprimeagen)
-vim.keymap.set('v', 'J', ":m '>+1<cr>gv=gv", { desc = 'Move selection down' })
-vim.keymap.set('v', 'K', ":m '<-2<cr>gv=gv", { desc = 'Move selection up' })
+vim.keymap.set('x', 'J', ":m '>+1<cr>gv=gv", { desc = 'Move selection down' })
+vim.keymap.set('x', 'K', ":m '<-2<cr>gv=gv", { desc = 'Move selection up' })
 
 -- normal: move the current line
 vim.keymap.set('n', '<A-j>', '<cmd>m .+1<cr>==', { desc = 'Move line down' })
