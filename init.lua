@@ -25,15 +25,18 @@
 -- This used to be one very long file. It still reads top to
 -- bottom in the same order, the actual code just moved out into:
 --
---   lua/config/          plain neovim stuff, no plugins involved
---   lua/custom/plugins/  one file per plugin
---   lua/custom/init.lua  the loader that pulls that folder in
+--   lua/config/            plain neovim stuff, no plugins involved
+--   lua/custom/plugins/    one file per plugin
+--   lua/custom/init.lua    the loader that pulls that folder in
+--   lua/custom/lspconfig/  one file per language server's extras,
+--                          loaded by lsp.lua
 --
 -- Each plugin file is self contained: it calls `vim.pack.add` for
 -- whatever it needs, then that plugin's `setup()`. So to rip a
 -- plugin out, just delete its file.
 --
--- <leader>sn to fuzzy find your way around these files.
+-- <leader>fn to fuzzy find your way around these files, and
+-- :help hanyue for how to use all of it.
 -- ============================================================
 
 -- [[ Core ]]
@@ -58,20 +61,6 @@ require 'config.commands'
 -- GUI only. Returns immediately when nvim is running in a terminal,
 -- so it costs nothing there.
 require 'config.neovide'
-
--- [[ ui2 ]]
--- Neovim 0.12's built in replacement for the message and cmdline area.
---   - no more "Press ENTER" prompts
---   - `g<` opens past messages in a normal buffer (the pager), so they can
---     be scrolled, searched and yanked like any other text
---   - the cmdline gets highlighted as you type
--- See `:help ui2`.
---
--- NOTE: still marked experimental. The module path is private (the `_` in
--- `vim._core`) and was already renamed once (from `vim._extui`), so a new
--- Neovim release may need this line updated. If it breaks or misbehaves,
--- delete it and everything goes back to the old message area.
-require('vim._core.ui2').enable {}
 
 -- [[ Plugins ]]
 -- Loads every file in `lua/custom/plugins/`.
