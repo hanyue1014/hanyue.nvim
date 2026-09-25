@@ -121,7 +121,28 @@ starter.setup {
     starter.gen_hook.adding_bullet(vim.g.have_nerd_font and '\u{f105} ' or '▎ '),
     starter.gen_hook.aligning('center', 'center'),
   },
+  -- Letters typed on the start screen filter the items (type `gr` and only
+  -- "Grep text" is left). That's mini's default, with every letter. j and k
+  -- are taken out of that list so they can move up and down instead, mapped
+  -- below. The only cost: an item starting with j or k can't be picked by
+  -- typing its first letter, move onto it with j/k instead.
+  query_updaters = 'abcdefghilmnopqrstuvwxyz0123456789_-.',
+  -- No "(mini.starter) Query: ..." line at the bottom. It lingered after
+  -- leaving the start screen until the next command cleared it. Errors
+  -- still show.
+  silent = true,
 }
+
+vim.api.nvim_create_autocmd('User', {
+  desc = 'j/k to move between start screen items',
+  group = vim.api.nvim_create_augroup('hanyue-starter-jk', { clear = true }),
+  pattern = 'MiniStarterOpened',
+  callback = function()
+    local buf = vim.api.nvim_get_current_buf()
+    vim.keymap.set('n', 'j', function() MiniStarter.update_current_item 'next' end, { buffer = buf, desc = 'Next item' })
+    vim.keymap.set('n', 'k', function() MiniStarter.update_current_item 'prev' end, { buffer = buf, desc = 'Previous item' })
+  end,
+})
 
 -- ... and there is more!
 --  Check out: https://github.com/nvim-mini/mini.nvim

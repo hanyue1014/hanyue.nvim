@@ -245,14 +245,102 @@ local function write_flags(dir)
   restart_clangd()
 end
 
+-- [[ Popup ]]
+-- A prompt at the bottom of the screen was easy to miss, or to type straight
+-- through. So this is a floating window in the middle of the screen, in
+-- warning colours, saying exactly what gets written where. It opens in
+-- insert mode on a line holding the folder:
+--
+--   <CR> on the folder          scan it, write compile_flags.txt there
+--   n / N / no / No / NO, <CR>  never ask in this folder. Has to be typed out
+--                               in full, no single key does this
+--   empty line, <CR>            not now
+--   <Esc> / <C-c>               not now
+--
+-- Keys do nothing for the first 300ms, so keys already being typed when it
+-- pops up (the "scooting past" case) can't answer it by accident. Leaving
+-- the window any other way also counts as "not now".
+--
+-- `on_done` gets what was on the line when <CR> was pressed, or nil.
+local POPUP_GRACE_MS = 300
+
+local function ask(default, on_done)
+  local text = {
+    'clangd has no include paths for this project.',
+    '',
+    'Enter scans the folder below for header folders and WRITES',
+    'compile_flags.txt into it (one -I line per header folder).',
+    'Type n or no instead to never be asked about this folder again.',
+    '',
+    default,
+  }
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].bufhidden = 'wipe'
+  -- No completion menu while typing, blink could grab <CR> for itself
+  vim.b[buf].completion = false
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, text)
+
+  local footer = ' <CR> confirm   n/no <CR> never ask here   <Esc> not now '
+  local width = math.min(vim.o.columns - 4, math.max(#text[5] + 2, #default + 2, 64))
+  local height = #text - 1 + math.ceil(math.max(#default, 1) / width)
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = 'editor',
+    row = math.max(0, math.floor((vim.o.lines - height) / 2) - 2),
+    col = math.floor((vim.o.columns - width) / 2),
+    width = width,
+    height = height,
+    style = 'minimal',
+    border = 'double',
+    title = (vim.g.have_nerd_font and ' \u{f071} ' or ' ! ') .. 'clangd will write a file in your repo ',
+    title_pos = 'center',
+    footer = footer,
+    footer_pos = 'center',
+    zindex = 200,
+  })
+  vim.wo[win].wrap = true
+  vim.wo[win].winhighlight = 'FloatBorder:DiagnosticWarn,FloatTitle:DiagnosticWarn,FloatFooter:Comment'
+
+  local ns = vim.api.nvim_create_namespace 'hanyue-clangd-popup'
+  vim.api.nvim_buf_set_extmark(buf, ns, 2, 0, { end_row = 4, hl_group = 'WarningMsg' })
+  vim.api.nvim_buf_set_extmark(buf, ns, #text - 1, 0, { end_row = #text, hl_group = 'Directory' })
+  vim.api.nvim_win_set_cursor(win, { #text, 0 })
+  vim.cmd 'startinsert!'
+
+  local done, ready = false, false
+  vim.defer_fn(function() ready = true end, POPUP_GRACE_MS)
+
+  local function finish(answer)
+    if done then return end
+    done = true
+    vim.cmd.stopinsert()
+    if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
+    on_done(answer)
+  end
+  local function map(lhs, fn)
+    vim.keymap.set({ 'n', 'i' }, lhs, function()
+      if ready then fn() end
+    end, { buffer = buf, nowait = true })
+  end
+
+  map('<CR>', function() finish(vim.api.nvim_buf_get_lines(buf, -2, -1, false)[1] or '') end)
+  map('<Esc>', function() finish(nil) end)
+  map('<C-c>', function() finish(nil) end)
+
+  vim.api.nvim_create_autocmd('WinLeave', {
+    buffer = buf,
+    once = true,
+    callback = function() vim.schedule(function() finish(nil) end) end,
+  })
+end
+
 -- [[ :ClangdScan ]]
--- Asks for a folder, prefilled with the startup folder.
---   a folder     scan it, write compile_flags.txt there
---   n            write an empty .clangd-ignore in the prefilled folder,
---                so it never asks there again
---   Esc / empty  do nothing. Easy to hit by accident, so it must not write
---                anything permanent. Asks again next session, or run
---                :ClangdScan whenever.
+-- Opens the popup above, prefilled with the startup folder.
+--   a folder        scan it, write compile_flags.txt there
+--   n / no          write an empty .clangd-ignore in the prefilled folder,
+--                   so it never asks there again
+--   empty / Esc     do nothing. Easy to hit by accident, so it must not
+--                   write anything permanent. Asks again next session, or
+--                   run :ClangdScan whenever.
 local prompting = false
 
 local function clangd_scan()
@@ -260,12 +348,12 @@ local function clangd_scan()
   prompting = true
   local default = get_startup_dir() or vim.fs.normalize(vim.uv.cwd())
 
-  vim.ui.input({ prompt = 'clangd: scan for headers (n to never ask here): ', default = default, completion = 'dir' }, function(input)
+  ask(default, function(input)
     prompting = false
     input = vim.trim(input or '')
     if input == '' then return notify 'skipped for now, run :ClangdScan when you want it' end
 
-    local skip = input == 'n'
+    local skip = input:lower() == 'n' or input:lower() == 'no'
     local dir = skip and default or absolute(input)
 
     if is_forbidden(dir) then
