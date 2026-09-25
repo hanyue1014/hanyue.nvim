@@ -236,8 +236,12 @@ end
 
 -- [[ :ClangdScan ]]
 -- Asks for a folder, prefilled with the startup folder.
---   a folder        scan it, write compile_flags.txt there
---   n / empty / Esc write an empty .clangd-ignore in the prefilled folder
+--   a folder     scan it, write compile_flags.txt there
+--   n            write an empty .clangd-ignore in the prefilled folder,
+--                so it never asks there again
+--   Esc / empty  do nothing. Easy to hit by accident, so it must not write
+--                anything permanent. Asks again next session, or run
+--                :ClangdScan whenever.
 local prompting = false
 
 local function clangd_scan()
@@ -245,10 +249,12 @@ local function clangd_scan()
   prompting = true
   local default = get_startup_dir() or vim.fs.normalize(vim.uv.cwd())
 
-  vim.ui.input({ prompt = 'clangd: scan for headers (n to skip): ', default = default, completion = 'dir' }, function(input)
+  vim.ui.input({ prompt = 'clangd: scan for headers (n to never ask here): ', default = default, completion = 'dir' }, function(input)
     prompting = false
     input = vim.trim(input or '')
-    local skip = input == '' or input == 'n'
+    if input == '' then return notify 'skipped for now, run :ClangdScan when you want it' end
+
+    local skip = input == 'n'
     local dir = skip and default or absolute(input)
 
     if is_forbidden(dir) then
@@ -285,7 +291,7 @@ local function has_marker(file, stop)
 end
 
 -- Asks at most once per session on its own. The markers normally keep it
--- quiet anyway, this covers the answers that write nothing (a refused
+-- quiet anyway, this covers the answers that write nothing (Esc, a refused
 -- folder, a scan over the limits), which would otherwise ask again on
 -- every C file you open. :ClangdScan by hand always works.
 local auto_prompted = false
