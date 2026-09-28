@@ -115,6 +115,13 @@ Jumping, mini.jump2d, `lua/custom/plugins/mini.lua`:
 mini's own `<CR>` mapping is disabled, it would take over Enter in every
 buffer, the quickfix list included.
 
+Breadcrumbs, dropbar, `lua/custom/plugins/dropbar.lua`:
+
+    <leader>lb  pick a winbar breadcrumb by label, opens its menu
+
+dropbar's suggested `[;` and `];` are left out. `[{` already jumps to the
+start of the enclosing block in brace languages, and the menu covers both.
+
 --------------------------------------------------------------------------------
 WINDOWS                                                   *hanyue-keys-window*
 
@@ -523,6 +530,30 @@ puts its bin folder on PATH, and this folder is loaded by globbing, so
 `lsp.lua` is not guaranteed to have run yet.
 
 Treesitter folds are present but commented out in `treesitter.lua`.
+
+BREADCRUMBS AND INDENT GUIDES
+Two plugins meant to be read together, so it's always clear whether the
+cursor is in a loop, or in the condition that ends it.
+
+`dropbar.lua` (dropbar.nvim) puts the file path and every block around
+the cursor in the winbar, like `main > for > if`. Its sources function is
+dropbar's default with treesitter and lsp swapped: language servers only
+report functions and types, so with lsp first loops and ifs never show.
+lsp stays as the fallback where there is no parser. Blocks are named by
+the start of their text up to the first non-word character, so C shows
+a bare `if`, not its condition.
+
+`indent-blankline.lua` (indent-blankline, `ibl`) draws a guide at every
+indent level, and highlights the one for the treesitter scope under the
+cursor. Every level on purpose, not just the current one like
+mini.indentscope, so the outer loop's guide is still visible from inside
+an if. Defaults only; they already skip nofile buffers, so the start
+screen and neo-tree stay clean.
+
+dropbar was picked over nvim-treesitter-context's sticky headers because
+those float over the top buffer lines in a scratch window ibl never draws
+in, which cut the guides off. The winbar covers no lines, so the guides
+run all the way up. catppuccin themes both through its integrations.
 
 NEO-TREE
 Ported from `lua/kickstart/plugins/neo-tree.lua`, which was already written

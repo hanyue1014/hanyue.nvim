@@ -42,7 +42,9 @@ require('catppuccin').setup {
   -- on whatever default highlight groups they picked.
   integrations = {
     blink_cmp = true,
+    dropbar = { enabled = true },
     gitsigns = true,
+    indent_blankline = { enabled = true },
     mason = true,
     mini = { enabled = true },
     native_lsp = { enabled = true },

@@ -81,7 +81,7 @@ require 'custom'
 --  Uncomment any of the lines below to enable them (you will need to restart nvim).
 --
 -- require 'kickstart.plugins.debug'
--- require 'kickstart.plugins.indent_line'
+-- indent_line is loaded from `lua/custom/plugins/indent-blankline.lua` instead
 -- require 'kickstart.plugins.lint'
 require 'kickstart.plugins.autopairs'
 -- require 'kickstart.plugins.neo-tree'
