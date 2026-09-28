@@ -34,6 +34,7 @@ Neovim. See |vim.pack|.
     lua/config/pack.lua          vim.pack build hooks, gh() url helper
     lua/custom/init.lua          loader for the folder below
     lua/custom/plugins/*.lua     one file per plugin
+    lua/custom/colorschemes/*.lua  one file per colorscheme
     lua/custom/lspconfig/*.lua   one file per language server's extras
 <
 Each plugin file is self contained. It calls `vim.pack.add` for what it
@@ -431,15 +432,12 @@ Set it back to `false` on a machine where the font can't be installed.
 Everything gated on it falls back to plain text rather than breaking.
 
 COLORSCHEME
-catppuccin mocha with `transparent_background = true`. Transparency also
-needs the terminal itself to be transparent. Neovim cannot do it alone.
-
-catppuccin is added with an explicit `name` because its repository is
-called `catppuccin/nvim`, which would otherwise install into a folder
-named `nvim`.
-
-tokyonight is still installed but not loaded. `:colorscheme
-tokyonight-night` switches to it, also `-storm` `-moon` `-day`.
+Each colorscheme is one file in `lua/custom/colorschemes/`, which
+installs and sets it up and nothing else. `colorscheme.lua` loads every
+file there, then applies the default named at its top. Adding one is a
+new file, removing one is deleting its file and, if it was the default,
+changing that name. All of them stay installed, so `:colorscheme` or
+`:Telescope colorscheme` switches for the session.
 
 FORMATTING, AND A GOTCHA
 lua_ls formatting is turned off in two separate places, the
@@ -553,7 +551,7 @@ screen and neo-tree stay clean.
 dropbar was picked over nvim-treesitter-context's sticky headers because
 those float over the top buffer lines in a scratch window ibl never draws
 in, which cut the guides off. The winbar covers no lines, so the guides
-run all the way up. catppuccin themes both through its integrations.
+run all the way up.
 
 NEO-TREE
 Ported from `lua/kickstart/plugins/neo-tree.lua`, which was already written

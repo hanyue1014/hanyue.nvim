@@ -74,11 +74,10 @@ local function fold_marker(virt_text, lnum, end_lnum, width, truncate)
 
   -- MoreMsg is the group ufo's own README example uses for the suffix. It's a
   -- stock highlight, so the colorscheme owns the colour and this file doesn't
-  -- have to guess at one: #89b4fa under catppuccin, a fairly loud blue.
+  -- have to guess at one.
   --
-  -- For a quieter marker, 'Comment' (#9399b2, and italic under catppuccin) and
-  -- 'LspInlayHint' (#6c7086, matching the hints from <leader>th) are both stock
-  -- too, so either is a one word swap here.
+  -- For a quieter marker, 'Comment' and 'LspInlayHint' (matching the hints
+  -- from <leader>th) are both stock too, so either is a one word swap here.
   chunks[#chunks + 1] = { suffix, 'MoreMsg' }
   return chunks
 end

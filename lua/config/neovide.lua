@@ -38,8 +38,8 @@ vim.g.neovide_cursor_vfx_mode = { 'railgun', 'ripple' }
 -- ------------------------------------------------------------
 
 -- Window transparency. This is the neovide equivalent of the terminal
--- opacity that catppuccin's `transparent_background` relies on. Without it
--- neovide just draws an opaque window and the transparent theme does nothing.
+-- opacity a transparent colorscheme relies on. Without it neovide just
+-- draws an opaque window and the transparent background does nothing.
 --
 -- NOTE: this used to be called `neovide_transparency`. Older blog posts and
 -- dotfiles still use that name, it's `neovide_opacity` now.
