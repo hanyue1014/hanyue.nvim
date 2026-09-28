@@ -16,4 +16,8 @@ local gh = require('config.pack').gh
 -- See `:help ibl`
 -- ============================================================
 vim.pack.add { gh 'lukas-reineke/indent-blankline.nvim' }
-require('ibl').setup {}
+require('ibl').setup {
+  -- no underline on the scope's first and last line, the lit up guide
+  -- is enough
+  scope = { show_start = false, show_end = false },
+}

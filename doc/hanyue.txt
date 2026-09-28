@@ -545,8 +545,9 @@ a bare `if`, not its condition.
 indent level, and highlights the one for the treesitter scope under the
 cursor. Every level on purpose, not just the current one like
 mini.indentscope, so the outer loop's guide is still visible from inside
-an if. Defaults only; they already skip nofile buffers, so the start
-screen and neo-tree stay clean.
+an if. Defaults, except the scope's first and last lines aren't
+underlined (`show_start` / `show_end` off). The default excludes already
+skip nofile buffers, so the start screen and neo-tree stay clean.
 
 dropbar was picked over nvim-treesitter-context's sticky headers because
 those float over the top buffer lines in a scratch window ibl never draws
