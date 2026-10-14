@@ -30,6 +30,8 @@ alternative [installation methods below](#alternative-neovim-installation-method
 
 ### Install External Dependencies
 
+Recommend going through [Install Recipes](#install-recipes) section, that section installs most needed dependencies
+
 External Requirements:
 - Basic utils: `git`, `make`, `unzip`, C Compiler (`gcc`)
 - [ripgrep](https://github.com/BurntSushi/ripgrep#installation),
@@ -66,6 +68,8 @@ Neovim's configurations are located under the following paths, depending on your
 | Windows (powershell)| `$env:LOCALAPPDATA\nvim\` |
 
 #### Clone hanyue.nvim
+
+Recommend going through [Install Recipes](#install-recipes) section before cloning as it helps handle most needed dependencies already
 
 <details><summary> Linux and Mac </summary>
 
