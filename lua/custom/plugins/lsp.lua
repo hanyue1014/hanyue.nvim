@@ -191,6 +191,10 @@ for server, tool in pairs(needs_on_path) do
   if vim.fn.executable(tool) == 1 then servers[server] = {} end
 end
 
+-- NOTE: Swift isn't in either table. Its server (`sourcekit`) comes with the
+-- Swift toolchain and mason has no package for it, so it's set up and enabled
+-- on its own in `lua/custom/lspconfig/sourcekit.lua`.
+
 vim.pack.add {
   gh 'neovim/nvim-lspconfig',
   gh 'mason-org/mason.nvim',

@@ -13,6 +13,9 @@
 --
 -- Pure Lua (vim.fs / vim.uv), no shelling out, so it works on native
 -- Windows the same as in WSL.
+--
+-- NOTE: clangd doesn't attach to C files inside a Swift project when Swift
+-- is installed, sourcekit takes those. See sourcekit.lua.
 -- ============================================================
 
 -- Scans that go past either limit write nothing. A whole BSP baseline has

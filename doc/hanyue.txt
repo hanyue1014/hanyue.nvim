@@ -42,8 +42,9 @@ needs, then that plugin's `setup()`. Deleting the file removes the plugin.
 
 `lua/custom/lspconfig/` holds whatever a server needs beyond its entry in
 the `servers` table (commands, autocommands, helpers), one file per server,
-so `lsp.lua` stays about wiring. `lsp.lua` loads every file in it. Only
-`clangd.lua` so far, see |hanyue-clangd|.
+so `lsp.lua` stays about wiring. `lsp.lua` loads every file in it.
+`clangd.lua`, see |hanyue-clangd|, and `sourcekit.lua`, which is a whole
+server on its own since mason can't install it (see LANGUAGE SERVERS).
 
 ================================================================================
 2. KEYMAPS SET BY THIS CONFIG                                    *hanyue-keys*
@@ -476,6 +477,24 @@ executable check.
 
 This gating exists so the same config works on machines with different
 things installed. Install a toolchain, restart, the server appears.
+
+Swift is a third kind. Its server, `sourcekit` (the `sourcekit-lsp`
+binary), comes with the Swift toolchain and mason has no package for it,
+so it is not in the `servers` table at all. `lua/custom/lspconfig/
+sourcekit.lua` enables it when `sourcekit-lsp` is on PATH. Same idea:
+install Swift, restart, it appears.
+
+    - A lone script works without a project or `git init`. It is checked
+      on its own, so it doesn't see other swift files next to it.
+    - C, C++ and Objective-C files inside a Swift project (Package.swift,
+      an Xcode project, buildServer.json) go to sourcekit instead of
+      clangd, so the C side of Swift interop gets the package's build
+      settings. Everywhere else clangd keeps them. Without Swift installed
+      clangd keeps them all.
+
+Only tested with a fake `sourcekit-lsp`, never against a real toolchain.
+If Swift misbehaves, `:checkhealth vim.lsp` shows which server attached
+and its root.
 
 `stylua` sits in the `servers` table even though it is a formatter, not a
 server. That is inherited from kickstart. It is how stylua gets into
