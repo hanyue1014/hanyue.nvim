@@ -30,6 +30,8 @@ alternative [installation methods below](#alternative-neovim-installation-method
 
 ### Install External Dependencies
 
+Recommend going through [Install Recipes](#install-recipes) section, that section installs most needed dependencies
+
 External Requirements:
 - Basic utils: `git`, `make`, `unzip`, C Compiler (`gcc`)
 - [ripgrep](https://github.com/BurntSushi/ripgrep#installation),
@@ -66,6 +68,8 @@ Neovim's configurations are located under the following paths, depending on your
 | Windows (powershell)| `$env:LOCALAPPDATA\nvim\` |
 
 #### Clone hanyue.nvim
+
+Recommend going through [Install Recipes](#install-recipes) section before cloning as it helps handle most needed dependencies already
 
 <details><summary> Linux and Mac </summary>
 
@@ -200,11 +204,25 @@ run in cmd as **admin**:
 winget install --accept-source-agreements chocolatey.chocolatey
 ```
 
-2. install all requirements using choco, exit the previous cmd and
-open a new one so that choco path is set, and run in cmd as **admin**:
+2. Close the previous terminal and open a new one as **admin** so the choco path is set,
+then install the requirements using one of these:
+
+  **Option 1: install everything** (cmd or PowerShell). If you already have some of
+  these tools from another manager (winget, scoop, etc.), this may install a second copy:
 ```
-choco install -y neovim git ripgrep wget fd unzip gzip mingw make tree-sitter
+  choco install -y neovim git ripgrep wget fd unzip gzip mingw make tree-sitter
 ```
+
+  **Option 2: install only what's missing** (PowerShell). Tools already on your PATH
+  are left alone, whatever installed them:
+```powershell
+  $tools = @{ nvim='neovim'; git='git'; rg='ripgrep'; wget='wget'; fd='fd'; unzip='unzip'; gzip='gzip'; gcc='mingw'; make='make'; 'tree-sitter'='tree-sitter' }
+  $missing = $tools.Keys | Where-Object { -not (Get-Command $_ -ErrorAction SilentlyContinue) } | ForEach-Object { $tools[$_] }
+  if ($missing) { choco install -y $missing } else { 'All requirements already installed.' }
+```
+
+   To update later, use whichever manager installed each tool
+   (e.g. `choco upgrade all -y`, `winget upgrade --all`).
 
 > [!WARNING]
 > Doing the above is **not** always enough for treesitter parsers on Windows.
