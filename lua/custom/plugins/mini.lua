@@ -89,10 +89,16 @@ local header = function()
   }, '\n')
 end
 
+-- Day/month names are spelled out here, os.date's %A/%B follow the system
+-- locale and come back in the ANSI codepage (garbled) on a non-English Windows
+local days = { 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' }
+local months = { 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' }
+
 local footer = function()
   local v = vim.version()
+  local d = os.date '*t'
   return table.concat({
-    icon '\u{f073}' .. os.date '%A, %d %B %Y',
+    icon '\u{f073}' .. string.format('%s, %02d %s %d', days[d.wday], d.day, months[d.month], d.year),
     icon '\u{f1e6}' .. #vim.pack.get() .. ' plugins',
     icon '\u{e62b}' .. string.format('v%d.%d.%d', v.major, v.minor, v.patch),
   }, '   ')
